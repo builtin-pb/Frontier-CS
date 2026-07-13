@@ -260,7 +260,11 @@ Expected: the production diff contains only the docstring cleanup and one JSON r
 - Test: `adapters/frontier-cs-2.0/src/frontier_cs_2_0/adapter.py`
 - Test: `adapters/frontier-cs-2.0/src/frontier_cs_2_0/task-template/environment/Dockerfile.judge`
 
-- [ ] **Step 1: Write the adapter integration tests**
+- [x] **Step 1: Write the adapter integration tests**
+
+Observed: Added the five planned integration cases plus regressions for size,
+special files, package-token safety, ancestor links, no-follow staging, and
+staged-tree tampering.
 
 Create `tests/test_frontier_cs_2_0_public_assets.py`:
 
@@ -413,7 +417,11 @@ def test_public_assets_reject_symlinks_before_staging(tmp_path: Path) -> None:
         FrontierCS20Adapter(repo, tmp_path / "generated", task_ids=["json_fixture"]).run()
 ```
 
-- [ ] **Step 2: Verify the intended RED state**
+- [x] **Step 2: Verify the intended RED state**
+
+Observed: The public-copy case failed at the missing judge `COPY`, and the
+dependency-boundary case failed at missing agent-only `numpy`. Later security
+regressions also recorded three intended failures before hardening.
 
 ```bash
 uv run pytest tests/test_frontier_cs_2_0_public_assets.py::test_public_assets_are_staged_for_agent_and_copied_to_judge -q
@@ -428,7 +436,10 @@ adapter does not install `runtime.pip_packages` in the agent image:
 uv run pytest tests/test_frontier_cs_2_0_public_assets.py::test_agent_only_pip_packages_do_not_enter_judge -q
 ```
 
-- [ ] **Step 3: Characterize existing compatibility behavior**
+- [x] **Step 3: Characterize existing compatibility behavior**
+
+Observed: The no-public judge-shape and JSON-reference characterization cases
+both passed before production changes.
 
 ```bash
 uv run pytest \
@@ -439,7 +450,11 @@ uv run pytest \
 
 Expected: `2 passed`.
 
-- [ ] **Step 4: Commit the RED tests**
+- [x] **Step 4: Commit the RED tests**
+
+Observed: RED evidence was recorded before implementation. Shared-worktree
+parallelism required the controller to consolidate accepted tests and code in
+one reviewed commit instead of reconstructing a tests-only RED commit.
 
 ```bash
 git add tests/test_frontier_cs_2_0_public_assets.py
@@ -453,7 +468,11 @@ git commit -m "test: specify judge-visible public assets"
 - Modify: `adapters/frontier-cs-2.0/src/frontier_cs_2_0/task-template/environment/Dockerfile.judge:8-11`
 - Test: `tests/test_frontier_cs_2_0_public_assets.py`
 
-- [ ] **Step 1: Compute the optional Dockerfile fragment**
+- [x] **Step 1: Compute the optional Dockerfile fragment**
+
+Observed: Added recursive 64 MiB/type validation, source component `lstat`
+checks, no-follow whole-app staging, source recheck, staged-public validation,
+and the conditional public-only judge fragment.
 
 Before the existing `shutil.copytree()` call, recursively validate the source
 `harbor/app/public` tree with `lstat`: reject every symlink, socket, FIFO,
@@ -472,7 +491,11 @@ after the copy block, add:
             )
 ```
 
-- [ ] **Step 2: Separate agent-only and judge pip dependencies**
+- [x] **Step 2: Separate agent-only and judge pip dependencies**
+
+Observed: The agent receives a stable deduplicated union while the judge gets
+only judge requirements. Agent entries require exact safe pins; judge entries
+allow safe bare names or exact pins, rejecting whitespace and shell syntax.
 
 Treat `runtime.pip_packages` as agent-only and
 `runtime.judge_pip_packages` as judge-required. The agent image installs the
@@ -487,7 +510,10 @@ The agent Dockerfile's `{extra_pip_install}` replacement uses
 `agent_pip_install`; the judge Dockerfile's `{judge_pip_install}` replacement
 uses `judge_pip_install`.
 
-- [ ] **Step 3: Substitute the fragment into the judge template**
+- [x] **Step 3: Substitute the fragment into the judge template**
+
+Observed: Separate judge pip and public-asset fragments are substituted with no
+unresolved placeholder in either generated task shape.
 
 Replace the judge Dockerfile replacement chain with:
 
@@ -504,7 +530,10 @@ Replace the judge Dockerfile replacement chain with:
         )
 ```
 
-- [ ] **Step 4: Add the template placeholder**
+- [x] **Step 4: Add the template placeholder**
+
+Observed: Added the conditional placeholder immediately after the narrow judge
+file copy and before evaluator permissions are set.
 
 Replace the copy-and-permission section of `Dockerfile.judge` with:
 
@@ -513,7 +542,10 @@ COPY judge_server.py problem_evaluator.py task_config.json /judge/
 {judge_public_assets}RUN chmod 600 /judge/problem_evaluator.py
 ```
 
-- [ ] **Step 5: Verify GREEN and backward compatibility**
+- [x] **Step 5: Verify GREEN and backward compatibility**
+
+Observed: The final focused suite passed 16 tests and the integrated root suite
+passed 23 tests, with only the pre-existing `google.generativeai` warning.
 
 ```bash
 uv run pytest tests/test_frontier_cs_2_0_public_assets.py -q
@@ -523,7 +555,11 @@ uv run pytest tests -q
 Expected: the focused file reports all public-asset, symlink, and compatibility
 tests passing, then all root tests pass.
 
-- [ ] **Step 6: Check scope and commit**
+- [x] **Step 6: Check scope and commit**
+
+Observed: Global `git diff --check`, Python compilation, and the broad judge-copy
+search passed. Specification and security/code-quality re-reviews approved the
+final no-follow implementation; the controller commits this accepted slice.
 
 ```bash
 git diff --check

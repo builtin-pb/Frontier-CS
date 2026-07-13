@@ -1,9 +1,11 @@
 from __future__ import annotations
 
-import logging
 import json
+import logging
+import re
 import shutil
 import secrets
+import stat
 from pathlib import Path
 from types import SimpleNamespace
 from typing import TYPE_CHECKING, Iterable
@@ -21,6 +23,102 @@ from .utils import (
 LOGGER = logging.getLogger(__name__)
 
 TEMPLATE_DIR = Path(__file__).parent / "task-template"
+MAX_PUBLIC_ASSET_BYTES = 64 * 1024 * 1024
+SAFE_PACKAGE_NAME = r"[A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?"
+SAFE_PACKAGE_VERSION = r"[A-Za-z0-9](?:[A-Za-z0-9._+-]*[A-Za-z0-9])?"
+SAFE_PIN_PATTERN = re.compile(
+    rf"{SAFE_PACKAGE_NAME}=={SAFE_PACKAGE_VERSION}\Z"
+)
+SAFE_JUDGE_PACKAGE_PATTERN = re.compile(
+    rf"{SAFE_PACKAGE_NAME}(?:=={SAFE_PACKAGE_VERSION})?\Z"
+)
+
+
+def _validate_public_assets(public_dir: Path) -> None:
+    """Validate a public asset tree without following filesystem links."""
+    try:
+        root_mode = public_dir.lstat().st_mode
+    except FileNotFoundError:
+        return
+
+    if stat.S_ISLNK(root_mode):
+        raise ValueError("public assets may not contain symlinks: public")
+    if not stat.S_ISDIR(root_mode):
+        raise ValueError("public assets root must be a directory")
+
+    total_bytes = 0
+    pending = [public_dir]
+    while pending:
+        directory = pending.pop()
+        for child in directory.iterdir():
+            child_stat = child.lstat()
+            mode = child_stat.st_mode
+            relative = child.relative_to(public_dir)
+            if stat.S_ISLNK(mode):
+                raise ValueError(
+                    f"public assets may not contain symlinks: {relative}"
+                )
+            if stat.S_ISDIR(mode):
+                pending.append(child)
+                continue
+            if not stat.S_ISREG(mode):
+                raise ValueError(
+                    f"public assets may contain only directories and regular files: "
+                    f"{relative}"
+                )
+            total_bytes += child_stat.st_size
+            if total_bytes > MAX_PUBLIC_ASSET_BYTES:
+                raise ValueError("public assets exceed the 64 MiB size limit")
+
+
+def _validate_public_assets_source(harbor_app_dir: Path) -> None:
+    """Reject unsafe components before accessing the source public tree."""
+    components = (
+        (harbor_app_dir.parent, "harbor"),
+        (harbor_app_dir, "harbor/app"),
+        (harbor_app_dir / "public", "harbor/app/public"),
+    )
+    for component, label in components:
+        try:
+            mode = component.lstat().st_mode
+        except FileNotFoundError:
+            return
+        if stat.S_ISLNK(mode):
+            raise ValueError(
+                f"public assets source path component {label} may not be a symlink"
+            )
+        if not stat.S_ISDIR(mode):
+            raise ValueError(
+                f"public assets source path component {label} must be a directory"
+            )
+
+    _validate_public_assets(harbor_app_dir / "public")
+
+
+def _agent_pip_package_names(
+    runtime: dict[str, object], *, problem_id: str
+) -> list[str]:
+    packages = [str(pkg) for pkg in runtime.get("pip_packages", []) or []]
+    for package in packages:
+        if SAFE_PIN_PATTERN.fullmatch(package) is None:
+            raise ValueError(
+                f"{problem_id}: runtime.pip_packages entries must be exact safe "
+                f"name==version pins: {package!r}"
+            )
+    return packages
+
+
+def _judge_pip_package_names(
+    runtime: dict[str, object], *, problem_id: str
+) -> list[str]:
+    packages = [str(pkg) for pkg in runtime.get("judge_pip_packages", []) or []]
+    for package in packages:
+        if SAFE_JUDGE_PACKAGE_PATTERN.fullmatch(package) is None:
+            raise ValueError(
+                f"{problem_id}: runtime.judge_pip_packages entries must be "
+                f"shell-safe bare names or exact name==version pins: {package!r}"
+            )
+    return packages
 
 
 def _make_task_paths(task_dir: Path):
@@ -203,20 +301,31 @@ class FrontierCS20Adapter:
             if apt_packages
             else ": &&"
         )
-        pip_package_names = [
-            str(pkg) for pkg in runtime.get("judge_pip_packages", []) or []
+        judge_pip_package_names = _judge_pip_package_names(
+            runtime,
+            problem_id=problem.problem_id,
+        )
+        agent_pip_package_names = [
+            *_agent_pip_package_names(runtime, problem_id=problem.problem_id),
+            *judge_pip_package_names,
         ]
-        pip_packages = " ".join(dict.fromkeys(pip_package_names))
-        extra_pip_install = (
-            f"pip3 install --break-system-packages {pip_packages} &&"
-            if pip_packages
+        agent_pip_packages = " ".join(dict.fromkeys(agent_pip_package_names))
+        judge_pip_packages = " ".join(dict.fromkeys(judge_pip_package_names))
+        agent_pip_install = (
+            f"pip3 install --break-system-packages {agent_pip_packages} &&"
+            if agent_pip_packages
+            else ": &&"
+        )
+        judge_pip_install = (
+            f"pip3 install --break-system-packages {judge_pip_packages} &&"
+            if judge_pip_packages
             else ": &&"
         )
         env_dir.joinpath("Dockerfile").write_text(
             dockerfile.replace("{base_image}", image).replace(
                 "{extra_apt_install}", extra_apt_install
             ).replace(
-                "{extra_pip_install}", extra_pip_install
+                "{extra_pip_install}", agent_pip_install
             ).replace(
                 "{visible_input_stages}",
                 self._visible_input_stages(problem, default_image=judge_image),
@@ -236,18 +345,30 @@ class FrontierCS20Adapter:
         )
         self._write_submission_config(env_dir, problem)
         harbor_app_dir = problem.problem_dir / "harbor" / "app"
+        _validate_public_assets_source(harbor_app_dir)
         generated_harbor_app_dir = env_dir / "harbor_app"
         generated_harbor_app_dir.mkdir(parents=True, exist_ok=True)
         if harbor_app_dir.exists():
             shutil.copytree(
                 harbor_app_dir,
                 generated_harbor_app_dir,
+                symlinks=True,
                 dirs_exist_ok=True,
                 ignore=(
                     shutil.ignore_patterns("input")
                     if self._visible_inputs(problem)
                     else None
                 ),
+            )
+
+        _validate_public_assets_source(harbor_app_dir)
+        public_assets_dir = generated_harbor_app_dir / "public"
+        _validate_public_assets(public_assets_dir)
+        judge_public_assets = ""
+        if public_assets_dir.is_dir():
+            judge_public_assets = (
+                "COPY harbor_app/public/ /judge/public/\n"
+                "ENV FRONTIER_PUBLIC_DIR=/judge/public\n"
             )
 
         judge_dockerfile = (
@@ -257,12 +378,13 @@ class FrontierCS20Adapter:
             str(pkg) for pkg in runtime.get("judge_apt_packages", []) or []
         )
         env_dir.joinpath("Dockerfile.judge").write_text(
-            judge_dockerfile.replace("{base_image}", judge_image).replace(
+            judge_dockerfile.replace("{base_image}", judge_image)
+            .replace(
                 "{judge_apt_packages_line}",
                 f" {judge_apt_packages}" if judge_apt_packages else "",
-            ).replace(
-                "{judge_pip_install}", extra_pip_install
-            ),
+            )
+            .replace("{judge_pip_install}", judge_pip_install)
+            .replace("{judge_public_assets}", judge_public_assets),
             encoding="utf-8",
         )
         environment = problem.config.get("environment", {}) or {}
