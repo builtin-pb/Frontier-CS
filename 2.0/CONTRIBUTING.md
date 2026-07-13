@@ -145,9 +145,9 @@ CLI.
 `reference.<ext>`
 
 A minimal valid solution or baseline. It does not need to be strong, but it
-should make local smoke tests straightforward. Match `<ext>` to
-`runtime.language`, for example `reference.py` for Python or `reference.json`
-for a static JSON artifact.
+should make local smoke tests straightforward. Use the registry-derived
+extension: for example, `reference.py` for Python, `reference.rs` for Rust, or
+`reference.json` for a static JSON artifact.
 
 ## Submission Modes
 

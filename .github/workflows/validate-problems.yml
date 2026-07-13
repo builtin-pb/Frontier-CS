@@ -3,11 +3,16 @@ name: Validate Problems
 on:
   pull_request:
     paths:
+      - '.github/workflows/validate-problems.yml'
       - 'algorithmic/problems/**'
       - 'research/problems/**'
       - '2.0/problems/**'
       - 'adapters/frontier-cs-2.0/**'
+      - 'scripts/validate_problems.py'
+      - 'src/frontier_cs/batch/evaluator.py'
       - 'src/frontier_cs/config.py'
+      - 'src/frontier_cs/runner/research_docker.py'
+      - 'src/frontier_cs/runner/research_skypilot.py'
       - 'tests/test_json_language.py'
       - 'tests/test_frontier_cs_2_0_public_assets.py'
 
@@ -68,6 +73,53 @@ jobs:
             tests/test_json_language.py \
             tests/test_frontier_cs_2_0_public_assets.py \
             -q
+
+      - name: Check generated Frontier-CS 2.0 task compatibility
+        run: |
+          ERDOS_OUTPUT="$RUNNER_TEMP/frontier-cs-phase1-erdos"
+          BBOPLACE_OUTPUT="$RUNNER_TEMP/frontier-cs-phase1-bboplace"
+
+          PYTHONPATH=adapters/frontier-cs-2.0/src \
+          uv run --no-sync python -m frontier_cs_2_0.main \
+            --source "$GITHUB_WORKSPACE" \
+            --output-dir "$ERDOS_OUTPUT" \
+            --task-ids erdos_demo \
+            --overwrite
+
+          ERDOS_TASK="$ERDOS_OUTPUT/frontier-cs-2-0-erdos-demo"
+          test ! -d "$ERDOS_TASK/environment/harbor_app/public"
+          if grep -Fq 'COPY harbor_app/public/ /judge/public/' \
+            "$ERDOS_TASK/environment/Dockerfile.judge"; then
+            echo "Unexpected public-assets COPY in erdos_demo judge image" >&2
+            exit 1
+          fi
+          if grep -Fq 'FRONTIER_PUBLIC_DIR' \
+            "$ERDOS_TASK/environment/Dockerfile.judge"; then
+            echo "Unexpected public-assets environment in erdos_demo judge image" >&2
+            exit 1
+          fi
+          if grep -Fq '{judge_public_assets}' \
+            "$ERDOS_TASK/environment/Dockerfile.judge"; then
+            echo "Unresolved judge-public-assets placeholder in erdos_demo" >&2
+            exit 1
+          fi
+
+          PYTHONPATH=adapters/frontier-cs-2.0/src \
+          uv run --no-sync python -m frontier_cs_2_0.main \
+            --source "$GITHUB_WORKSPACE" \
+            --output-dir "$BBOPLACE_OUTPUT" \
+            --task-ids \
+              bboplace_ispd2005 \
+              bboplace_iccad2015 \
+              bboplace_direct_ispd2005 \
+              bboplace_direct_iccad2015 \
+            --overwrite
+
+          python3 tools/bboplace/check_generated_tasks.py "$BBOPLACE_OUTPUT"
+          grep -F 'cp /solution/reference.py /app/solution.json' \
+            "$BBOPLACE_OUTPUT/frontier-cs-2-0-bboplace-direct-ispd2005/solution/solve.sh"
+          grep -F 'cp /solution/reference.py /app/solution.json' \
+            "$BBOPLACE_OUTPUT/frontier-cs-2-0-bboplace-direct-iccad2015/solution/solve.sh"
 
   validate-algorithmic:
     needs: detect-changes

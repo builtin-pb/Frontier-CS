@@ -5,9 +5,11 @@ from pathlib import Path
 
 import pytest
 
+from frontier_cs.batch.evaluator import BatchEvaluator
 from frontier_cs.config import get_language_config, get_problem_extension
 from frontier_cs.runner.base import EvaluationResult
 from frontier_cs.runner.research_docker import ResearchDockerRunner
+from frontier_cs.runner.research_skypilot import ResearchSkyPilotRunner
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -113,3 +115,60 @@ def test_docker_runner_materializes_json_before_evaluation_boundary(
         "suffix": ".json",
         "payload": payload,
     }
+
+
+def test_skypilot_runner_materializes_json_before_evaluation_boundary(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    problems_dir = tmp_path / "2.0" / "problems"
+    problem_dir = problems_dir / "json_problem"
+    _write_json_problem(problem_dir)
+    runner = ResearchSkyPilotRunner(
+        base_dir=tmp_path,
+        problems_dir=problems_dir,
+    )
+    observed: dict[str, str | None] = {}
+
+    def capture_boundary(
+        problem_id: str,
+        received_problem_dir: Path,
+        solution_path: Path,
+        solution_id: str | None,
+    ) -> EvaluationResult:
+        observed["problem_id"] = problem_id
+        observed["problem_dir"] = str(received_problem_dir)
+        observed["suffix"] = solution_path.suffix
+        observed["payload"] = solution_path.read_text(encoding="utf-8")
+        observed["solution_id"] = solution_id
+        return EvaluationResult(problem_id=problem_id, score=0.0)
+
+    monkeypatch.setattr(runner, "_run_evaluation", capture_boundary)
+    payload = '{"schema_version": 1, "solutions": []}'
+
+    result = runner.evaluate("json_problem", payload)
+
+    assert result.success
+    assert observed == {
+        "problem_id": "json_problem",
+        "problem_dir": str(problem_dir),
+        "suffix": ".json",
+        "payload": payload,
+        "solution_id": None,
+    }
+
+
+def test_batch_evaluator_builds_json_problem_extensions(tmp_path: Path) -> None:
+    problems_dir = tmp_path / "2.0" / "problems"
+    _write_json_problem(problems_dir / "json_problem")
+    evaluator = BatchEvaluator(
+        results_dir=tmp_path / "results",
+        base_dir=tmp_path,
+        problems_dir=problems_dir,
+        backend="docker",
+        track="2.0",
+    )
+
+    extensions = evaluator._build_problem_extensions(["json_problem"])
+
+    assert extensions == {"json_problem": "json"}
