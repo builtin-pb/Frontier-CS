@@ -26,7 +26,11 @@ The adapter currently stages `harbor/app` for the agent. Its judge template copi
 - Test: `scripts/validate_problems.py`
 - Test: `src/frontier_cs/runner/research_docker.py`
 
-- [ ] **Step 1: Write the failing public-API tests**
+- [x] **Step 1: Write the failing public-API tests**
+
+Observed: Added registry/extension, two existing BBOPlace reference-discovery,
+and Docker-boundary payload tests. The standalone validation script is loaded
+locally with `importlib.util` so test collection does not mutate `sys.path`.
 
 Create `tests/test_json_language.py`:
 
@@ -138,7 +142,10 @@ def test_docker_runner_materializes_json_before_evaluation_boundary(
     }
 ```
 
-- [ ] **Step 2: Verify RED without crossing the evaluation boundary**
+- [x] **Step 2: Verify RED without crossing the evaluation boundary**
+
+Observed: The usable RED run reported four failures, all caused by
+`ValueError: Unsupported language: json`; the monkeypatch prevented Docker.
 
 Run:
 
@@ -148,7 +155,12 @@ uv run pytest tests/test_json_language.py -q
 
 Expected: four collected cases fail with `ValueError: Unsupported language: json`. The capture function prevents Docker execution.
 
-- [ ] **Step 3: Commit the RED tests**
+- [x] **Step 3: Commit the RED tests**
+
+Observed: RED evidence was recorded before production editing. Because parallel
+workers share one worktree, the controller consolidated the accepted tests and
+minimal implementation into one reviewed slice instead of manufacturing a
+tests-only commit after GREEN.
 
 ```bash
 git add tests/test_json_language.py
@@ -161,7 +173,11 @@ git commit -m "test: expose missing JSON artifact support"
 - Modify: `src/frontier_cs/config.py:197-221`
 - Test: `tests/test_json_language.py`
 
-- [ ] **Step 1: Replace the language declaration and registry**
+- [x] **Step 1: Replace the language declaration and registry**
+
+Observed: Added the exact JSON registry entry and language-or-artifact
+`LanguageConfig` wording. Untouched historical CRLF bytes were preserved; only
+changed/new lines use LF so the minimal diff passes the mandated plain check.
 
 Use this exact block in `src/frontier_cs/config.py`:
 
@@ -199,7 +215,10 @@ LANGUAGE_CONFIGS: Dict[str, LanguageConfig] = {
 }
 ```
 
-- [ ] **Step 2: Verify GREEN**
+- [x] **Step 2: Verify GREEN**
+
+Observed: `uv run pytest tests/test_json_language.py -q` passed all four cases
+with one pre-existing `google.generativeai` warning.
 
 ```bash
 uv run pytest tests/test_json_language.py -q
@@ -207,7 +226,10 @@ uv run pytest tests/test_json_language.py -q
 
 Expected: `4 passed`.
 
-- [ ] **Step 3: Run the surrounding root tests**
+- [x] **Step 3: Run the surrounding root tests**
+
+Observed: The integrated root suite passed all 20 tests with the same
+pre-existing warning and no evaluator import or external execution.
 
 ```bash
 uv run pytest tests -q
@@ -215,7 +237,12 @@ uv run pytest tests -q
 
 Expected: every root test passes.
 
-- [ ] **Step 4: Inspect and commit the minimal fix**
+- [x] **Step 4: Inspect and commit the minimal fix**
+
+Observed: Plain `git diff --check` passed and the production diff contains only
+the planned `LanguageConfig` cleanup and JSON entry. Independent specification
+and code-quality reviews approved the final slice; the controller commits the
+accepted test and implementation together with this execution record.
 
 ```bash
 git diff --check

@@ -195,10 +195,11 @@ def get_effective_gpu_type(runtime_config: RuntimeConfig) -> Optional[str]:
 
 @dataclass
 class LanguageConfig:
-    """Configuration for a target programming language."""
-    name: str              # "python", "cpp"
-    extension: str         # "py", "cpp"
-    code_block_tag: str    # Markdown code block tag: "python", "cpp"
+    """Configuration for a target submission language or artifact format."""
+
+    name: str
+    extension: str
+    code_block_tag: str
 
 
 # Registry of supported languages
@@ -217,6 +218,11 @@ LANGUAGE_CONFIGS: Dict[str, LanguageConfig] = {
         name="rust",
         extension="rs",
         code_block_tag="rust",
+    ),
+    "json": LanguageConfig(
+        name="json",
+        extension="json",
+        code_block_tag="json",
     ),
 }
 
