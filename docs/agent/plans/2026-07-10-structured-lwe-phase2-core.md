@@ -164,7 +164,9 @@ count, and difficulty metadata is diagnostic only.
 - Create: `2.0/problems/lwe_structured_recovery/tests/conftest.py`
 - Create: `tests/test_lwe_structured_recovery_registration.py`
 
-- [ ] **Step 1: Add task-local import/fixture plumbing and write the failing JSON-language registration test**
+- [x] **Step 1: Add task-local import/fixture plumbing and write the failing JSON-language registration test**
+
+  Observed: Added the task-local lazy fixtures and safe path-based module loader, plus the root JSON-registration test. The implementation and both independent reviewers confirmed the imports remain lazy and the loader removes a partially initialized module if execution fails.
 
 In task-local `conftest.py`, prepend the task root, `harbor/app`, and
 `harbor/app/public` to `sys.path`. Provide lazy `task_dir`, `catalog_path`,
@@ -193,14 +195,18 @@ def test_lwe_structured_recovery_uses_json_reference() -> None:
     )
 ```
 
-- [ ] **Step 2: Run the focused test and verify RED**
+- [x] **Step 2: Run the focused test and verify RED**
+
+  Observed: The literal command first hit the sandboxed default uv cache. Re-running with `UV_CACHE_DIR=/tmp/frontier-cs-uv-cache` produced the intended behavioral failure, `assert 'py' == 'json'` (`1 failed`).
 
 Run: `uv run pytest tests/test_lwe_structured_recovery_registration.py -q`
 
 Expected: FAIL because the task files do not exist. Phase 1 already supplies
 the JSON registry entry.
 
-- [ ] **Step 3: Create the JSON task metadata and empty ledgers**
+- [x] **Step 3: Create the JSON task metadata and empty ledgers**
+
+  Observed: Created the exact pinned agent runtime configuration without judge dependency fields, and byte-checked both empty ledgers as the required single canonical line with a final LF.
 
 Create `config.yaml` exactly as:
 
@@ -254,13 +260,17 @@ Create both JSON ledgers with one line:
 {"schema_version":1,"solutions":[]}
 ```
 
-- [ ] **Step 4: Run the focused test and verify GREEN**
+- [x] **Step 4: Run the focused test and verify GREEN**
+
+  Observed: The focused registration test passed (`1 passed`); the surrounding root suite passed (`38 passed`) with only the pre-existing `google.generativeai` deprecation warning.
 
 Run: `uv run pytest tests/test_lwe_structured_recovery_registration.py -q`
 
 Expected: `1 passed`.
 
-- [ ] **Step 5: Commit the scaffold**
+- [x] **Step 5: Commit the scaffold**
+
+  Observed: The slice passed independent specification and code-quality review with no findings and was accepted under the planned `feat(2.0): scaffold structured LWE JSON task` commit boundary.
 
 ```bash
 git add tests/test_lwe_structured_recovery_registration.py 2.0/problems/lwe_structured_recovery/config.yaml 2.0/problems/lwe_structured_recovery/reference.json 2.0/problems/lwe_structured_recovery/harbor/app/solution.json 2.0/problems/lwe_structured_recovery/tests/conftest.py
