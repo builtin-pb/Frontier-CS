@@ -284,7 +284,9 @@ git commit -m "feat(2.0): scaffold structured LWE JSON task"
 - Create: `2.0/problems/lwe_structured_recovery/harbor/app/public/lwe_challenge/strict_json.py`
 - Create: `2.0/problems/lwe_structured_recovery/tests/test_strict_json.py`
 
-- [ ] **Step 1: Write one failing behavior test**
+- [x] **Step 1: Write one failing behavior test**
+
+  Observed: Added the nested duplicate-key behavior test through the public `loads_object` API.
 
 ```python
 import pytest
@@ -297,13 +299,17 @@ def test_nested_duplicate_key_is_rejected() -> None:
         loads_object(b'{"x":{"instance_id":"a","instance_id":"b"}}', max_bytes=100)
 ```
 
-- [ ] **Step 2: Run the test and verify RED**
+- [x] **Step 2: Run the test and verify RED**
+
+  Observed: The focused test failed at collection with the intended `ModuleNotFoundError` because `lwe_challenge` did not yet exist.
 
 Run: `PYTHONPATH=2.0/problems/lwe_structured_recovery/harbor/app/public uv run pytest 2.0/problems/lwe_structured_recovery/tests/test_strict_json.py -q`
 
 Expected: collection ERROR with `ModuleNotFoundError: No module named 'lwe_challenge'`.
 
-- [ ] **Step 3: Implement the complete strict JSON API**
+- [x] **Step 3: Implement the complete strict JSON API**
+
+  Observed: Implemented the bounded decoder and then hardened its decode boundary after quality review: finite-looking exponent overflow is rejected, while decoder recursion and Python integer-digit-limit failures are normalized without masking hook-raised `JsonContractError` values.
 
 ```python
 # strict_json.py
@@ -374,13 +380,17 @@ def loads_object(
     return value
 ```
 
-- [ ] **Step 4: Add one RED→GREEN cycle each for byte limit, NaN, malformed UTF-8, non-object input, excessive nesting, and excessive node count**
+- [x] **Step 4: Add one RED→GREEN cycle each for byte limit, NaN, malformed UTF-8, non-object input, excessive nesting, and excessive node count**
+
+  Observed: The six planned boundary tests were added individually and were immediately green against the complete implementation. Review-driven regressions for positive/negative exponent overflow, decoder recursion, and overlong integers each reproduced the missing behavior before their fixes; a finite-float preservation test also passes.
 
 Add six separate tests calling `loads_object`; run the focused file after
 adding each test, observe the intended failure, then make only the smallest
 correction if the implementation does not pass it.
 
-- [ ] **Step 5: Run the module tests and commit**
+- [x] **Step 5: Run the module tests and commit**
+
+  Observed: The final focused suite passed (`12 passed`) and the current task-plus-registration suite passed (`20 passed`). Independent specification review passed; code-quality re-review approved the hardened implementation with no remaining findings. The slice was accepted under the planned `feat(structured-lwe): reject ambiguous JSON` commit boundary.
 
 Run: `PYTHONPATH=2.0/problems/lwe_structured_recovery/harbor/app/public uv run pytest 2.0/problems/lwe_structured_recovery/tests/test_strict_json.py -q`
 
