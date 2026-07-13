@@ -268,6 +268,10 @@ tag: security
 runtime:
   language: json
   timeout_seconds: 300
+  pip_packages:
+    - numpy==2.1.3
+  judge_pip_packages:
+    - jsonschema==4.23.0
   docker:
     image: ubuntu:24.04
 submission:
@@ -326,16 +330,24 @@ def test_public_assets_are_staged_for_agent_and_copied_to_judge(
         "harbor_app", "public", "catalog.jsonl"
     ).read_bytes() == PUBLIC_PAYLOAD
     assert "COPY harbor_app/ /app/" in agent
-    assert "numpy==2.1.3" in agent
-    assert "jsonschema==4.23.0" in agent
-    assert "numpy==2.1.3" not in judge
-    assert "jsonschema==4.23.0" in judge
     assert "COPY harbor_app/public/ /judge/public/" in judge
     assert "ENV FRONTIER_PUBLIC_DIR=/judge/public" in judge
     assert "COPY harbor_app/ /judge/" not in judge
     assert "harbor_app/tools" not in judge
     assert "harbor_app/analyses" not in judge
     assert "{judge_public_assets}" not in judge
+
+
+def test_agent_only_pip_packages_do_not_enter_judge(tmp_path: Path) -> None:
+    task = _generate_fixture(tmp_path, include_public=False)
+    environment = task / "environment"
+    judge = environment.joinpath("Dockerfile.judge").read_text(encoding="utf-8")
+    agent = environment.joinpath("Dockerfile").read_text(encoding="utf-8")
+
+    assert "numpy==2.1.3" in agent
+    assert "jsonschema==4.23.0" in agent
+    assert "numpy==2.1.3" not in judge
+    assert "jsonschema==4.23.0" in judge
 
 
 def test_task_without_public_assets_keeps_existing_judge_shape(
@@ -381,6 +393,13 @@ uv run pytest tests/test_frontier_cs_2_0_public_assets.py::test_public_assets_ar
 ```
 
 Expected: one assertion fails because `Dockerfile.judge` lacks `COPY harbor_app/public/ /judge/public/`.
+
+Run the dependency-boundary test separately and verify RED because the current
+adapter does not install `runtime.pip_packages` in the agent image:
+
+```bash
+uv run pytest tests/test_frontier_cs_2_0_public_assets.py::test_agent_only_pip_packages_do_not_enter_judge -q
+```
 
 - [ ] **Step 3: Characterize existing compatibility behavior**
 
@@ -634,7 +653,10 @@ git commit -m "ci: validate 2.0 JSON and public assets"
 - Modify: `2.0/CONTRIBUTING.md`
 - Modify: `adapters/frontier-cs-2.0/README.md`
 
-- [ ] **Step 1: Document static JSON artifacts**
+- [x] **Step 1: Document static JSON artifacts**
+
+Observed: Added extension-aware reference guidance and the static JSON
+artifact contract, including `reference.json` and the non-execution rule.
 
 After the file-submission example in `2.0/CONTRIBUTING.md`, add:
 
@@ -654,7 +676,10 @@ Commit a matching `reference.json`. JSON is an artifact format: the evaluator
 reads the submitted bytes and must not execute them as Python code.
 ````
 
-- [ ] **Step 2: Document shared public assets**
+- [x] **Step 2: Document shared public assets**
+
+Observed: Documented the agent and judge paths, judge environment variable,
+sibling-tree exclusion, and the public-tree type and 64 MiB validation limits.
 
 Before `## Black-Box Safety` in `2.0/CONTRIBUTING.md`, add:
 
@@ -677,7 +702,10 @@ the evaluator must read. Do not place private test data, planted answers,
 secret seeds, or evaluator-only configuration in `harbor/app/public`.
 ```
 
-- [ ] **Step 3: Document adapter output**
+- [x] **Step 3: Document adapter output**
+
+Observed: Documented the conditional public-only judge copy and confirmed that
+tasks without public assets retain the previous judge image shape.
 
 After the paragraph describing `harbor/app/` in `adapters/frontier-cs-2.0/README.md`, add:
 
@@ -689,7 +717,10 @@ emit no additional judge `COPY` instruction, preserving the previous image
 shape.
 ```
 
-- [ ] **Step 4: Document agent-only Python dependencies**
+- [x] **Step 4: Document agent-only Python dependencies**
+
+Observed: Documented agent-only exact pins, shell-safe judge tokens, the
+agent/judge installation boundary, and minimal secretless-judge guidance.
 
 Document `runtime.pip_packages` as agent-only and
 `runtime.judge_pip_packages` as judge-required (and therefore also present in
@@ -697,7 +728,12 @@ the agent). Require one exact package token per YAML item and explain that
 heavy research/analysis dependencies should remain agent-only while a
 secretless evaluator should keep the judge minimal.
 
-- [ ] **Step 5: Verify and commit documentation**
+- [x] **Step 5: Verify and commit documentation**
+
+Observed: All specified greps and `git diff --check` passed. Independent
+specification review passed; quality review requested two precision fixes and
+approved the revised documentation. The controller records the accepted docs
+and execution log together rather than creating an implementer-side commit.
 
 ```bash
 grep -F "language: json" 2.0/CONTRIBUTING.md

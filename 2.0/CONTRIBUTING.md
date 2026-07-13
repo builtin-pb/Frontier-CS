@@ -15,7 +15,7 @@ Create one directory per task:
   readme
   evaluator.py
   evaluate.sh
-  reference.py
+  reference.<ext>
 ```
 
 Use a lowercase `snake_case` `<problem_id>`. This is the stable Frontier-CS
@@ -85,6 +85,18 @@ submission:
     - .git
 ```
 
+Use `runtime.pip_packages` for Python dependencies that only the agent needs.
+Each entry must be one safe, exact `name==version` token; do not include
+whitespace, shell flags, or environment markers. Use
+`runtime.judge_pip_packages` for dependencies required by the evaluator. Judge
+dependencies are installed in both the judge and the agent so contributors can
+reproduce evaluator-facing behavior, while agent-only dependencies are kept out
+of the judge. The exact-pin rule applies to `runtime.pip_packages`; judge
+requirements may instead be unpinned bare package names. Every entry in either
+list must be one shell-safe package token, with no whitespace or shell
+metacharacters. Keep heavy research and analysis packages agent-only, and keep
+a secretless evaluator's judge dependencies minimal.
+
 `evaluator.py`
 
 The task evaluator. It must expose:
@@ -130,10 +142,12 @@ Local CLI wrapper for non-Harbor evaluation. Keep it simple: call the evaluator
 on the provided solution and print the score/message expected by the Frontier-CS
 CLI.
 
-`reference.py`
+`reference.<ext>`
 
 A minimal valid solution or baseline. It does not need to be strong, but it
-should make local smoke tests straightforward.
+should make local smoke tests straightforward. Match `<ext>` to
+`runtime.language`, for example `reference.py` for Python or `reference.json`
+for a static JSON artifact.
 
 ## Submission Modes
 
@@ -147,6 +161,20 @@ submission:
   kind: file
   path: /app/solution.json
 ```
+
+For a static JSON artifact, declare JSON as the runtime language so the CLI,
+batch runner, CI reference discovery, and Harbor adapter all use `.json`:
+
+```yaml
+runtime:
+  language: json
+submission:
+  kind: file
+  path: /app/solution.json
+```
+
+Commit a matching `reference.json`. JSON is an artifact format: the evaluator
+reads the submitted bytes and must not execute them as Python code.
 
 Directory submission:
 
@@ -189,6 +217,25 @@ bash /app/submit.sh
 The helper packages the configured submission path, sends it to the judge, and
 prints score feedback. Harbor trial results keep the best successful iterative
 submission if the agent times out or the final artifact is worse.
+
+## Public Assets Shared With the Judge
+
+Put byte-identical public verifier inputs under:
+
+```text
+2.0/problems/<problem_id>/harbor/app/public/
+```
+
+The generated agent image exposes this directory at `/app/public`. The
+generated judge image exposes only this `public` child at `/judge/public` and
+sets `FRONTIER_PUBLIC_DIR=/judge/public`. Sibling resources such as
+`harbor/app/tools/` and `harbor/app/analyses/` are not copied into the judge.
+
+Use this convention for public catalogs and deterministic materializers that
+the evaluator must read. Do not place private test data, planted answers,
+secret seeds, or evaluator-only configuration in `harbor/app/public`. The
+adapter allows only directories and regular files; it rejects symlinks and all
+other filesystem node types. Its regular files must total no more than 64 MiB.
 
 ## Black-Box Safety
 
@@ -279,7 +326,7 @@ Run a local smoke test:
 
 ```bash
 python3 2.0/problems/<problem_id>/evaluator.py \
-  2.0/problems/<problem_id>/reference.py
+  2.0/problems/<problem_id>/reference.<ext>
 ```
 
 Generate the Harbor task:

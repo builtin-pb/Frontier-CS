@@ -42,6 +42,26 @@ agent/judge packages, resource limits, and submission mode. The task's `readme`
 is embedded into the Harbor instruction. Optional files under
 `2.0/problems/<problem_id>/harbor/app/` are copied into `/app` for the agent.
 
+An optional `harbor/app/public/` child is also copied into the judge image at
+`/judge/public`, with `FRONTIER_PUBLIC_DIR` set to that path. This is the only
+`harbor/app` subtree shared with the judge. Tasks without `harbor/app/public/`
+emit no additional judge `COPY` instruction or `FRONTIER_PUBLIC_DIR` setting,
+preserving the previous image shape.
+
+Before staging public assets, the adapter allows only directories and regular
+files; it rejects symlinks and all other filesystem node types. The regular
+files must total no more than 64 MiB.
+
+Use `runtime.pip_packages` for agent-only Python dependencies. Each item must
+be one safe, exact `name==version` token, without whitespace, shell flags, or
+environment markers. Use `runtime.judge_pip_packages` for dependencies required
+by the evaluator; these are installed in both the judge and the agent. Heavy
+research and analysis dependencies should remain agent-only, while a secretless
+evaluator should keep its judge dependencies minimal. The exact-pin rule applies
+only to `runtime.pip_packages`; judge requirements may instead be unpinned bare
+package names. Every entry in either list must be one shell-safe package token,
+with no whitespace or shell metacharacters.
+
 The evaluator is copied into the judge/verifier side as
 `problem_evaluator.py`; it is not copied into the agent workspace. This keeps
 iterative feedback black-box while still allowing agents to call
@@ -88,11 +108,12 @@ uv run harbor trial start -p datasets/frontier-cs-2.0/frontier-cs-2-0-erdos-demo
 
 ## Task Contract
 
-The agent works in `/app` and must create `/app/solution.py` unless the task
-declares a directory submission. A judge sidecar prepares the task evaluator
-once per trial; both iterative submissions and the final verifier score
-through that same sidecar. The final verifier writes a normalized reward in
-`/logs/verifier/reward.txt`.
+The agent works in `/app`. For a file submission it must create the configured
+`submission.path`, which defaults to `/app/solution.py`; directory submissions
+snapshot their configured path instead. A judge sidecar prepares the task
+evaluator once per trial; both iterative submissions and the final verifier
+score through that same sidecar. The final verifier writes a normalized reward
+in `/logs/verifier/reward.txt`.
 
 Tasks may set `runtime.docker.image` in `config.yaml` when the agent workspace
 needs a custom runnable environment, for example cached compilers, SDKs,
@@ -130,8 +151,8 @@ During the trial, the agent can call:
 bash /app/submit.sh
 ```
 
-This submits the current `/app/solution.py` to a black-box judge service,
-prints the score and feedback, and records each attempt in
+This submits the artifact at the configured `submission.path` to a black-box
+judge service, prints the score and feedback, and records each attempt in
 `/logs/agent/submissions.jsonl`. The evaluator source is not mounted into the
 agent workspace. The judge owns the authoritative submission log at
 `/logs/judge/submissions.jsonl`; the final verifier filters iterative agent
