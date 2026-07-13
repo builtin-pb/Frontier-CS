@@ -860,7 +860,10 @@ Expected: every grep prints the new contract text.
 - Verify: `2.0/CONTRIBUTING.md`
 - Verify: `adapters/frontier-cs-2.0/README.md`
 
-- [ ] **Step 1: Run all root unit tests**
+- [x] **Step 1: Run all root unit tests**
+
+Observed: Final-tree `uv run pytest tests -q` passed all 37 tests in 1.24s.
+The only warning is the pre-existing `google.generativeai` deprecation notice.
 
 ```bash
 uv run pytest tests -q
@@ -868,7 +871,10 @@ uv run pytest tests -q
 
 Expected: every root test passes without importing a task evaluator.
 
-- [ ] **Step 2: Compile modified Python infrastructure outside the worktree cache**
+- [x] **Step 2: Compile modified Python infrastructure outside the worktree cache**
+
+Observed: All four modified Python infrastructure/test files compiled with
+`PYTHONPYCACHEPREFIX=/tmp/frontier-cs-phase1-pycache` and exit status zero.
 
 ```bash
 PYTHONPYCACHEPREFIX=/tmp/frontier-cs-phase1-pycache \
@@ -881,7 +887,10 @@ python3 -m py_compile \
 
 Expected: exit zero, with bytecode under `/tmp/frontier-cs-phase1-pycache`.
 
-- [ ] **Step 3: Check whitespace and copy scope**
+- [x] **Step 3: Check whitespace and copy scope**
+
+Observed: Plain `git diff --check` passed and the broad judge-copy search found
+zero matches. Final YAML parsing and static Erdos/BBOPlace checks also passed.
 
 ```bash
 git diff --check
@@ -893,11 +902,16 @@ test "$(rg -n 'COPY harbor_app/ /judge/' \
 
 Expected: no whitespace errors and no broad judge copy.
 
-- [ ] **Step 4: Review only the Phase 1 paths**
+- [x] **Step 4: Review only the Phase 1 paths**
+
+Observed: Reviewed the pinned `4c2f9ff2..94c5106a` range: eight implementation
+paths plus this live-plan ninth. `git status --short` lists only the untouched,
+untracked `LWE-literature.md`. The final independent full-range review reports
+no actionable in-range issue and `Ready to merge? Yes`.
 
 ```bash
 git status --short
-BASE_COMMIT=$(git merge-base HEAD origin/main)
+BASE_COMMIT=4c2f9ff2
 git diff --stat "$BASE_COMMIT"..HEAD
 git diff "$BASE_COMMIT"..HEAD -- \
   src/frontier_cs/config.py \
@@ -910,7 +924,9 @@ git diff "$BASE_COMMIT"..HEAD -- \
   adapters/frontier-cs-2.0/README.md
 ```
 
-Expected: only the eight scoped implementation paths appear, independent of the number of TDD commits. `LWE-literature.md` remains unstaged and unchanged.
+Expected: the eight scoped implementation paths plus this live execution plan
+appear, independent of the number of TDD commits. `LWE-literature.md` remains
+unstaged and unchanged.
 
 ## Acceptance criteria
 
