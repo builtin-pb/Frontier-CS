@@ -475,7 +475,8 @@ git commit -m "test: specify judge-visible public assets"
 Observed: Added a descriptor-relative, no-follow public snapshot with pinned
 source/destination identities, actual-byte 64 MiB accounting, coherent source
 metadata checks, exact pre/post destination manifests, identity-gated cleanup,
-and atomic public installation. No-public whole-app behavior remains legacy.
+and Linux/macOS atomic no-replace installation. Unsupported platforms fail
+closed; no-public whole-app behavior remains legacy.
 
 Before the existing `shutil.copytree()` call, recursively validate the source
 `harbor/app/public` tree with `lstat`: reject every symlink, socket, FIFO,
@@ -547,8 +548,8 @@ COPY judge_server.py problem_evaluator.py task_config.json /judge/
 
 - [x] **Step 5: Verify GREEN and backward compatibility**
 
-Observed: The final focused suite passed 27 tests and the integrated root suite
-passed 36 tests, with only the pre-existing `google.generativeai` warning.
+Observed: The final focused suite passed 28 tests and the integrated root suite
+passed 37 tests, with only the pre-existing `google.generativeai` warning.
 
 ```bash
 uv run pytest tests/test_frontier_cs_2_0_public_assets.py -q

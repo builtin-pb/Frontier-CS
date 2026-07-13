@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import ctypes
+import errno
 import json
 import logging
 import os
@@ -7,6 +9,7 @@ import re
 import shutil
 import secrets
 import stat
+import sys
 from pathlib import Path
 from types import SimpleNamespace
 from typing import TYPE_CHECKING, Iterable
@@ -624,11 +627,53 @@ def _remove_public_destination_entry(
 
 
 def _rename_public_snapshot_entry(parent_fd: int, temporary_name: str) -> None:
-    os.rename(
-        temporary_name,
-        "public",
-        src_dir_fd=parent_fd,
-        dst_dir_fd=parent_fd,
+    """Atomically install public without replacing any existing entry."""
+    if sys.platform == "darwin":
+        function_name = "renameatx_np"
+        flags = 0x00000004  # RENAME_EXCL from <sys/stdio.h>.
+    elif sys.platform.startswith("linux"):
+        function_name = "renameat2"
+        flags = 1  # RENAME_NOREPLACE from <linux/fs.h>.
+    else:
+        raise OSError(
+            errno.ENOTSUP,
+            "atomic no-replace directory rename is unsupported on this platform",
+        )
+
+    libc = ctypes.CDLL(None, use_errno=True)
+    try:
+        rename_function = getattr(libc, function_name)
+    except AttributeError as exc:
+        raise OSError(
+            errno.ENOTSUP,
+            f"atomic no-replace directory rename lacks {function_name}",
+        ) from exc
+    rename_function.argtypes = (
+        ctypes.c_int,
+        ctypes.c_char_p,
+        ctypes.c_int,
+        ctypes.c_char_p,
+        ctypes.c_uint,
+    )
+    rename_function.restype = ctypes.c_int
+    ctypes.set_errno(0)
+    result = rename_function(
+        parent_fd,
+        os.fsencode(temporary_name),
+        parent_fd,
+        b"public",
+        flags,
+    )
+    if result == 0:
+        return
+
+    error_number = ctypes.get_errno()
+    if error_number in (errno.EEXIST, errno.ENOTEMPTY):
+        raise ValueError("public assets destination conflict during finalize")
+    raise OSError(
+        error_number,
+        os.strerror(error_number),
+        f"{temporary_name} -> public",
     )
 
 

@@ -437,6 +437,46 @@ def test_rename_boundary_swap_rejects_unrecognized_public_without_judge_output(
     assert not environment.joinpath("Dockerfile.judge").exists()
 
 
+def test_atomic_finalize_preserves_unknown_empty_public_destination(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repo = _write_fixture_repo(tmp_path, include_public=True)
+    environment = tmp_path.joinpath(
+        "generated/frontier-cs-2-0-json-fixture/environment"
+    )
+    generated_app = environment / "harbor_app"
+    real_rename = adapter_module._rename_public_snapshot_entry
+    conflict_identity: tuple[int, int] | None = None
+
+    def create_conflict_then_rename(parent_fd: int, temporary_name: str) -> None:
+        nonlocal conflict_identity
+        os.mkdir("public", mode=0o700, dir_fd=parent_fd)
+        conflict = os.stat("public", dir_fd=parent_fd, follow_symlinks=False)
+        conflict_identity = (conflict.st_dev, conflict.st_ino)
+        real_rename(parent_fd, temporary_name)
+
+    monkeypatch.setattr(
+        adapter_module,
+        "_rename_public_snapshot_entry",
+        create_conflict_then_rename,
+    )
+
+    with pytest.raises(ValueError, match="public assets destination conflict"):
+        FrontierCS20Adapter(
+            repo,
+            tmp_path / "generated",
+            task_ids=["json_fixture"],
+        ).run()
+
+    assert conflict_identity is not None
+    conflict_after = generated_app.joinpath("public").lstat()
+    assert (conflict_after.st_dev, conflict_after.st_ino) == conflict_identity
+    assert generated_app.joinpath("public").is_dir()
+    assert list(generated_app.joinpath("public").iterdir()) == []
+    assert not environment.joinpath("Dockerfile.judge").exists()
+
+
 def test_nested_destination_swap_between_mkdir_and_open_is_rejected(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
