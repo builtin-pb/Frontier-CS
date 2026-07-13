@@ -585,7 +585,10 @@ destructive cleanup command is required.
 - Modify: `.github/workflows/validate-problems.yml:4-9`
 - Modify: `.github/workflows/validate-problems.yml` after `detect-changes`
 
-- [ ] **Step 1: Extend the workflow path filter**
+- [x] **Step 1: Extend the workflow path filter**
+
+Observed: Added the adapter, shared config, and both focused infrastructure
+test paths alongside the existing problem paths.
 
 Use this exact block:
 
@@ -602,7 +605,10 @@ on:
       - 'tests/test_frontier_cs_2_0_public_assets.py'
 ```
 
-- [ ] **Step 2: Add the independent infrastructure job**
+- [x] **Step 2: Add the independent infrastructure job**
+
+Observed: Added the independent Python 3.11/uv job with the exact two-file
+solver-free pytest command and no dependency on problem validation jobs.
 
 Add this complete job beside `validate-algorithmic`:
 
@@ -631,7 +637,11 @@ Add this complete job beside `validate-algorithmic`:
             -q
 ```
 
-- [ ] **Step 3: Parse YAML and run the focused suite**
+- [x] **Step 3: Parse YAML and run the focused suite**
+
+Observed: YAML parsing passed. The first test attempt overlapped the JSON RED
+phase; the integrated root suite subsequently passed all 20 tests, including
+both focused infrastructure files.
 
 ```bash
 uv run python -c "from pathlib import Path; import yaml; data=yaml.safe_load(Path('.github/workflows/validate-problems.yml').read_text()); assert data"
@@ -640,7 +650,11 @@ uv run pytest tests/test_json_language.py tests/test_frontier_cs_2_0_public_asse
 
 Expected: YAML parsing exits zero and all focused infrastructure tests pass.
 
-- [ ] **Step 4: Commit CI coverage**
+- [x] **Step 4: Commit CI coverage**
+
+Observed: Independent specification and code-quality reviews approved the
+workflow. The controller committed the accepted workflow with this execution
+record rather than using an implementer-side commit.
 
 ```bash
 git add .github/workflows/validate-problems.yml

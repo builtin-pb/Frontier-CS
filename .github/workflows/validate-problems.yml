@@ -6,6 +6,10 @@ on:
       - 'algorithmic/problems/**'
       - 'research/problems/**'
       - '2.0/problems/**'
+      - 'adapters/frontier-cs-2.0/**'
+      - 'src/frontier_cs/config.py'
+      - 'tests/test_json_language.py'
+      - 'tests/test_frontier_cs_2_0_public_assets.py'
 
 jobs:
   detect-changes:
@@ -41,6 +45,29 @@ jobs:
           B20=$(python scripts/detect_changed_problems.py --track 2.0 --base-ref origin/${{ github.base_ref }} -v 2>&1 | tail -1)
           echo "benchmark20=$B20" >> $GITHUB_OUTPUT
           echo "Frontier-CS 2.0 problems: $B20"
+
+  validate-benchmark20-infrastructure:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Run Frontier-CS 2.0 infrastructure tests
+        run: |
+          uv run pytest \
+            tests/test_json_language.py \
+            tests/test_frontier_cs_2_0_public_assets.py \
+            -q
 
   validate-algorithmic:
     needs: detect-changes
