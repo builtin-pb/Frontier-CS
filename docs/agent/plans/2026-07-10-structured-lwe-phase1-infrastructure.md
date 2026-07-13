@@ -29,8 +29,9 @@ The adapter currently stages `harbor/app` for the agent. Its judge template copi
 - [x] **Step 1: Write the failing public-API tests**
 
 Observed: Added registry/extension, two existing BBOPlace reference-discovery,
-and Docker-boundary payload tests. The standalone validation script is loaded
-locally with `importlib.util` so test collection does not mutate `sys.path`.
+Docker- and SkyPilot-boundary payload tests, and a batch extension-map test.
+The standalone validation script is loaded locally with `importlib.util` so
+test collection does not mutate `sys.path`.
 
 Create `tests/test_json_language.py`:
 
@@ -217,8 +218,9 @@ LANGUAGE_CONFIGS: Dict[str, LanguageConfig] = {
 
 - [x] **Step 2: Verify GREEN**
 
-Observed: `uv run pytest tests/test_json_language.py -q` passed all four cases
-with one pre-existing `google.generativeai` warning.
+Observed: The original four cases passed; the final suite includes SkyPilot and
+batch consumers and passes all six cases with one pre-existing
+`google.generativeai` warning.
 
 ```bash
 uv run pytest tests/test_json_language.py -q
@@ -228,7 +230,7 @@ Expected: `4 passed`.
 
 - [x] **Step 3: Run the surrounding root tests**
 
-Observed: The integrated root suite passed all 20 tests with the same
+Observed: The final integrated root suite passed all 36 tests with the same
 pre-existing warning and no evaluator import or external execution.
 
 ```bash
@@ -470,9 +472,10 @@ git commit -m "test: specify judge-visible public assets"
 
 - [x] **Step 1: Compute the optional Dockerfile fragment**
 
-Observed: Added recursive 64 MiB/type validation, source component `lstat`
-checks, no-follow whole-app staging, source recheck, staged-public validation,
-and the conditional public-only judge fragment.
+Observed: Added a descriptor-relative, no-follow public snapshot with pinned
+source/destination identities, actual-byte 64 MiB accounting, coherent source
+metadata checks, exact pre/post destination manifests, identity-gated cleanup,
+and atomic public installation. No-public whole-app behavior remains legacy.
 
 Before the existing `shutil.copytree()` call, recursively validate the source
 `harbor/app/public` tree with `lstat`: reject every symlink, socket, FIFO,
@@ -544,8 +547,8 @@ COPY judge_server.py problem_evaluator.py task_config.json /judge/
 
 - [x] **Step 5: Verify GREEN and backward compatibility**
 
-Observed: The final focused suite passed 16 tests and the integrated root suite
-passed 23 tests, with only the pre-existing `google.generativeai` warning.
+Observed: The final focused suite passed 27 tests and the integrated root suite
+passed 36 tests, with only the pre-existing `google.generativeai` warning.
 
 ```bash
 uv run pytest tests/test_frontier_cs_2_0_public_assets.py -q
@@ -558,8 +561,9 @@ tests passing, then all root tests pass.
 - [x] **Step 6: Check scope and commit**
 
 Observed: Global `git diff --check`, Python compilation, and the broad judge-copy
-search passed. Specification and security/code-quality re-reviews approved the
-final no-follow implementation; the controller commits this accepted slice.
+search passed. Repeated specification and security/code-quality reviews drove
+deterministic source/destination race, partial-cleanup, and in-place-mutation
+regressions, then approved the descriptor-snapshot implementation.
 
 ```bash
 git diff --check
@@ -665,8 +669,9 @@ destructive cleanup command is required.
 
 - [x] **Step 1: Extend the workflow path filter**
 
-Observed: Added the adapter, shared config, and both focused infrastructure
-test paths alongside the existing problem paths.
+Observed: Added the workflow itself, adapter, shared config, validator, Docker
+and SkyPilot runners, batch evaluator, and both focused infrastructure tests
+alongside the existing problem paths.
 
 Use this exact block:
 
@@ -686,7 +691,9 @@ on:
 - [x] **Step 2: Add the independent infrastructure job**
 
 Observed: Added the independent Python 3.11/uv job with the exact two-file
-solver-free pytest command and no dependency on problem validation jobs.
+solver-free pytest command and no dependency on problem validation jobs. A
+solver-free static step also generates Erdos and all four BBOPlace tasks and
+runs their structural assertions in CI.
 
 Add this complete job beside `validate-algorithmic`:
 
@@ -718,8 +725,8 @@ Add this complete job beside `validate-algorithmic`:
 - [x] **Step 3: Parse YAML and run the focused suite**
 
 Observed: YAML parsing passed. The first test attempt overlapped the JSON RED
-phase; the integrated root suite subsequently passed all 20 tests, including
-both focused infrastructure files.
+phase; the final integrated root suite subsequently passed all 36 tests,
+including both focused infrastructure files, and static CI commands passed.
 
 ```bash
 uv run python -c "from pathlib import Path; import yaml; data=yaml.safe_load(Path('.github/workflows/validate-problems.yml').read_text()); assert data"
@@ -747,8 +754,9 @@ git commit -m "ci: validate 2.0 JSON and public assets"
 
 - [x] **Step 1: Document static JSON artifacts**
 
-Observed: Added extension-aware reference guidance and the static JSON
-artifact contract, including `reference.json` and the non-execution rule.
+Observed: Added registry-extension-aware reference guidance (`.py`, `.rs`, and
+`.json`) and the static JSON artifact contract, including `reference.json` and
+the non-execution rule.
 
 After the file-submission example in `2.0/CONTRIBUTING.md`, add:
 

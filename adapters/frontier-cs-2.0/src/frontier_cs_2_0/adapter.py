@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import re
 import shutil
 import secrets
@@ -32,67 +33,708 @@ SAFE_PIN_PATTERN = re.compile(
 SAFE_JUDGE_PACKAGE_PATTERN = re.compile(
     rf"{SAFE_PACKAGE_NAME}(?:=={SAFE_PACKAGE_VERSION})?\Z"
 )
+_NOFOLLOW = getattr(os, "O_NOFOLLOW", 0)
+_DIRECTORY = getattr(os, "O_DIRECTORY", 0)
+_CLOEXEC = getattr(os, "O_CLOEXEC", 0)
+_SOURCE_DIRECTORY_FLAGS = os.O_RDONLY | _DIRECTORY | _NOFOLLOW | _CLOEXEC
+_SOURCE_FILE_FLAGS = os.O_RDONLY | _NOFOLLOW | _CLOEXEC
+_DESTINATION_DIRECTORY_FLAGS = os.O_RDONLY | _DIRECTORY | _NOFOLLOW | _CLOEXEC
+_DESTINATION_FILE_FLAGS = (
+    os.O_WRONLY | os.O_CREAT | os.O_EXCL | _NOFOLLOW | _CLOEXEC
+)
+PublicSnapshotManifest = dict[tuple[str, ...], os.stat_result]
 
 
-def _validate_public_assets(public_dir: Path) -> None:
-    """Validate a public asset tree without following filesystem links."""
+def _public_assets_opted_in(harbor_app_dir: Path) -> bool:
+    """Recognize a public directory or symlink as an explicit opt-in."""
     try:
-        root_mode = public_dir.lstat().st_mode
+        mode = (harbor_app_dir / "public").lstat().st_mode
     except FileNotFoundError:
-        return
-
-    if stat.S_ISLNK(root_mode):
-        raise ValueError("public assets may not contain symlinks: public")
-    if not stat.S_ISDIR(root_mode):
-        raise ValueError("public assets root must be a directory")
-
-    total_bytes = 0
-    pending = [public_dir]
-    while pending:
-        directory = pending.pop()
-        for child in directory.iterdir():
-            child_stat = child.lstat()
-            mode = child_stat.st_mode
-            relative = child.relative_to(public_dir)
-            if stat.S_ISLNK(mode):
-                raise ValueError(
-                    f"public assets may not contain symlinks: {relative}"
-                )
-            if stat.S_ISDIR(mode):
-                pending.append(child)
-                continue
-            if not stat.S_ISREG(mode):
-                raise ValueError(
-                    f"public assets may contain only directories and regular files: "
-                    f"{relative}"
-                )
-            total_bytes += child_stat.st_size
-            if total_bytes > MAX_PUBLIC_ASSET_BYTES:
-                raise ValueError("public assets exceed the 64 MiB size limit")
+        return False
+    return stat.S_ISDIR(mode) or stat.S_ISLNK(mode)
 
 
-def _validate_public_assets_source(harbor_app_dir: Path) -> None:
-    """Reject unsafe components before accessing the source public tree."""
-    components = (
-        (harbor_app_dir.parent, "harbor"),
-        (harbor_app_dir, "harbor/app"),
-        (harbor_app_dir / "public", "harbor/app/public"),
+def _same_inode(first: os.stat_result, second: os.stat_result) -> bool:
+    return (first.st_dev, first.st_ino) == (second.st_dev, second.st_ino)
+
+
+def _same_snapshot_metadata(
+    first: os.stat_result,
+    second: os.stat_result,
+) -> bool:
+    return (
+        _same_inode(first, second)
+        and stat.S_IFMT(first.st_mode) == stat.S_IFMT(second.st_mode)
+        and first.st_size == second.st_size
+        and first.st_mtime_ns == second.st_mtime_ns
+        and first.st_ctime_ns == second.st_ctime_ns
     )
-    for component, label in components:
+
+
+def _fstat_or_close(descriptor: int) -> os.stat_result:
+    """Take ownership only after the first fstat succeeds."""
+    try:
+        return os.fstat(descriptor)
+    except Exception:
+        os.close(descriptor)
+        raise
+
+
+def _open_public_source_entry(name: str, flags: int, *, dir_fd: int) -> int:
+    """Open one source entry relative to its already-pinned parent directory."""
+    return os.open(name, flags, dir_fd=dir_fd)
+
+
+def _open_pinned_source_directory(
+    name: str,
+    *,
+    parent_fd: int,
+    label: str,
+    expected: os.stat_result | None = None,
+) -> int:
+    """Open and identity-check a source directory without following links."""
+    before = expected
+    if before is None:
         try:
-            mode = component.lstat().st_mode
-        except FileNotFoundError:
-            return
-        if stat.S_ISLNK(mode):
+            before = os.stat(name, dir_fd=parent_fd, follow_symlinks=False)
+        except OSError as exc:
             raise ValueError(
-                f"public assets source path component {label} may not be a symlink"
-            )
-        if not stat.S_ISDIR(mode):
+                f"public assets source path component {label} changed during snapshot"
+            ) from exc
+
+    if stat.S_ISLNK(before.st_mode):
+        raise ValueError(
+            f"public assets source path component {label} may not be a symlink"
+        )
+    if not stat.S_ISDIR(before.st_mode):
+        raise ValueError(
+            f"public assets source path component {label} must be a directory"
+        )
+
+    try:
+        descriptor = _open_public_source_entry(
+            name,
+            _SOURCE_DIRECTORY_FLAGS,
+            dir_fd=parent_fd,
+        )
+    except OSError as exc:
+        raise ValueError(
+            f"public assets source path component {label} may not be a symlink "
+            "and must not change during snapshot"
+        ) from exc
+
+    opened = _fstat_or_close(descriptor)
+    if not stat.S_ISDIR(opened.st_mode) or not _same_snapshot_metadata(
+        before,
+        opened,
+    ):
+        os.close(descriptor)
+        raise ValueError(
+            f"public assets source path component {label} changed during snapshot"
+        )
+    return descriptor
+
+
+def _open_public_source_root(harbor_app_dir: Path) -> int:
+    """Pin harbor/app/public by traversing from the problem directory."""
+    problem_dir = harbor_app_dir.parent.parent
+    try:
+        problem_before = problem_dir.lstat()
+    except OSError as exc:
+        raise ValueError("public assets problem directory is unavailable") from exc
+
+    if stat.S_ISLNK(problem_before.st_mode) or not stat.S_ISDIR(
+        problem_before.st_mode
+    ):
+        raise ValueError(
+            "public assets source path problem directory must be a real directory"
+        )
+
+    try:
+        problem_fd = os.open(problem_dir, _SOURCE_DIRECTORY_FLAGS)
+    except OSError as exc:
+        raise ValueError(
+            "public assets source path problem directory may not be a symlink"
+        ) from exc
+    problem_opened = _fstat_or_close(problem_fd)
+    if not _same_snapshot_metadata(problem_before, problem_opened):
+        os.close(problem_fd)
+        raise ValueError("public assets problem directory changed during snapshot")
+
+    descriptors = [problem_fd]
+    try:
+        harbor_fd = _open_pinned_source_directory(
+            "harbor", parent_fd=problem_fd, label="harbor"
+        )
+        descriptors.append(harbor_fd)
+        app_fd = _open_pinned_source_directory(
+            "app", parent_fd=harbor_fd, label="harbor/app"
+        )
+        descriptors.append(app_fd)
+        public_fd = _open_pinned_source_directory(
+            "public", parent_fd=app_fd, label="harbor/app/public"
+        )
+        descriptors.append(public_fd)
+    except Exception:
+        for descriptor in reversed(descriptors):
+            os.close(descriptor)
+        raise
+
+    for descriptor in descriptors[:-1]:
+        os.close(descriptor)
+    return public_fd
+
+
+def _write_all(descriptor: int, data: bytes) -> None:
+    remaining = memoryview(data)
+    while remaining:
+        written = os.write(descriptor, remaining)
+        if written <= 0:
+            raise OSError("short write while staging public assets")
+        remaining = remaining[written:]
+
+
+def _read_public_source_chunk(descriptor: int, size: int) -> bytes:
+    return os.read(descriptor, size)
+
+
+def _open_created_public_destination_directory(
+    name: str,
+    *,
+    parent_fd: int,
+    expected: os.stat_result,
+) -> int:
+    """Pin a just-created destination directory across lstat/open/fstat."""
+    try:
+        descriptor = os.open(
+            name,
+            _DESTINATION_DIRECTORY_FLAGS,
+            dir_fd=parent_fd,
+        )
+    except OSError as exc:
+        raise ValueError("public assets destination changed during snapshot") from exc
+    opened = _fstat_or_close(descriptor)
+    try:
+        current = os.stat(name, dir_fd=parent_fd, follow_symlinks=False)
+    except OSError as exc:
+        os.close(descriptor)
+        raise ValueError("public assets destination changed during snapshot") from exc
+    if (
+        not stat.S_ISDIR(current.st_mode)
+        or not _same_inode(expected, current)
+        or not _same_inode(current, opened)
+    ):
+        os.close(descriptor)
+        raise ValueError("public assets destination changed during snapshot")
+    return descriptor
+
+
+def _snapshot_public_directory(
+    source_fd: int,
+    destination_fd: int,
+    *,
+    relative: Path,
+    total_bytes: list[int],
+    manifest: PublicSnapshotManifest,
+) -> None:
+    """Copy a pinned public directory into a private descriptor-relative tree."""
+    directory_before = os.fstat(source_fd)
+    try:
+        names = sorted(os.listdir(source_fd))
+    except OSError as exc:
+        raise ValueError("public assets changed during snapshot") from exc
+
+    source_entries: dict[str, os.stat_result] = {}
+    for name in names:
+        child_relative = relative / name
+        manifest_path = child_relative.parts
+        try:
+            before = os.stat(name, dir_fd=source_fd, follow_symlinks=False)
+        except OSError as exc:
             raise ValueError(
-                f"public assets source path component {label} must be a directory"
+                f"public asset changed during snapshot: {child_relative}"
+            ) from exc
+        source_entries[name] = before
+
+        if stat.S_ISLNK(before.st_mode):
+            raise ValueError(
+                f"public assets may not contain symlinks: {child_relative}"
             )
 
-    _validate_public_assets(harbor_app_dir / "public")
+        if stat.S_ISDIR(before.st_mode):
+            child_source_fd = _open_pinned_source_directory(
+                name,
+                parent_fd=source_fd,
+                label=str(child_relative),
+                expected=before,
+            )
+            try:
+                os.mkdir(name, mode=0o700, dir_fd=destination_fd)
+                try:
+                    child_created = os.stat(
+                        name,
+                        dir_fd=destination_fd,
+                        follow_symlinks=False,
+                    )
+                except OSError as exc:
+                    raise ValueError(
+                        "public assets destination changed during snapshot"
+                    ) from exc
+                child_destination_fd = (
+                    _open_created_public_destination_directory(
+                        name,
+                        parent_fd=destination_fd,
+                        expected=child_created,
+                    )
+                )
+                manifest[manifest_path] = child_created
+                try:
+                    _snapshot_public_directory(
+                        child_source_fd,
+                        child_destination_fd,
+                        relative=child_relative,
+                        total_bytes=total_bytes,
+                        manifest=manifest,
+                    )
+                    os.fchmod(
+                        child_destination_fd,
+                        stat.S_IMODE(os.fstat(child_source_fd).st_mode),
+                    )
+                    manifest[manifest_path] = os.fstat(child_destination_fd)
+                finally:
+                    os.close(child_destination_fd)
+            finally:
+                os.close(child_source_fd)
+            continue
+
+        if not stat.S_ISREG(before.st_mode):
+            raise ValueError(
+                "public assets may contain only directories and regular files: "
+                f"{child_relative}"
+            )
+
+        try:
+            child_source_fd = _open_public_source_entry(
+                name,
+                _SOURCE_FILE_FLAGS,
+                dir_fd=source_fd,
+            )
+        except OSError as exc:
+            raise ValueError(
+                f"public assets may not contain symlinks: {child_relative}"
+            ) from exc
+        try:
+            opened = os.fstat(child_source_fd)
+            if not stat.S_ISREG(opened.st_mode) or not _same_snapshot_metadata(
+                before,
+                opened,
+            ):
+                raise ValueError(
+                    f"public asset changed during snapshot: {child_relative}"
+                )
+            child_destination_fd = os.open(
+                name,
+                _DESTINATION_FILE_FLAGS,
+                stat.S_IMODE(opened.st_mode),
+                dir_fd=destination_fd,
+            )
+            try:
+                destination_opened = os.fstat(child_destination_fd)
+                destination_entry = os.stat(
+                    name,
+                    dir_fd=destination_fd,
+                    follow_symlinks=False,
+                )
+                if (
+                    not stat.S_ISREG(destination_entry.st_mode)
+                    or not _same_inode(destination_opened, destination_entry)
+                ):
+                    raise ValueError(
+                        "public assets destination changed during snapshot"
+                    )
+                manifest[manifest_path] = destination_opened
+                while True:
+                    chunk = _read_public_source_chunk(
+                        child_source_fd,
+                        1024 * 1024,
+                    )
+                    if not chunk:
+                        break
+                    total_bytes[0] += len(chunk)
+                    if total_bytes[0] > MAX_PUBLIC_ASSET_BYTES:
+                        raise ValueError(
+                            "public assets exceed the 64 MiB size limit"
+                        )
+                    _write_all(child_destination_fd, chunk)
+                source_after = os.fstat(child_source_fd)
+                if not _same_snapshot_metadata(opened, source_after):
+                    raise ValueError(
+                        f"public asset changed during snapshot: {child_relative}"
+                    )
+                os.fchmod(child_destination_fd, stat.S_IMODE(opened.st_mode))
+                manifest[manifest_path] = os.fstat(child_destination_fd)
+            finally:
+                os.close(child_destination_fd)
+        finally:
+            os.close(child_source_fd)
+
+    try:
+        names_after = sorted(os.listdir(source_fd))
+    except OSError as exc:
+        raise ValueError("public assets changed during snapshot") from exc
+    if names_after != names:
+        raise ValueError("public assets changed during snapshot")
+    for name, before in source_entries.items():
+        try:
+            after = os.stat(name, dir_fd=source_fd, follow_symlinks=False)
+        except OSError as exc:
+            raise ValueError(
+                f"public asset changed during snapshot: {relative / name}"
+            ) from exc
+        if not _same_snapshot_metadata(before, after):
+            raise ValueError(
+                f"public asset changed during snapshot: {relative / name}"
+            )
+    directory_after = os.fstat(source_fd)
+    if not _same_snapshot_metadata(directory_before, directory_after):
+        raise ValueError("public assets changed during snapshot")
+
+
+def _open_pinned_public_destination(destination: Path) -> tuple[int, os.stat_result]:
+    """Pin the generated harbor_app directory before creating snapshot state."""
+    try:
+        before = destination.lstat()
+    except OSError as exc:
+        raise ValueError("public assets destination is unavailable") from exc
+    if stat.S_ISLNK(before.st_mode) or not stat.S_ISDIR(before.st_mode):
+        raise ValueError("public assets destination must be a real directory")
+    try:
+        descriptor = os.open(destination, _DESTINATION_DIRECTORY_FLAGS)
+    except OSError as exc:
+        raise ValueError("public assets destination may not be a symlink") from exc
+    opened = _fstat_or_close(descriptor)
+    if not stat.S_ISDIR(opened.st_mode) or not _same_inode(before, opened):
+        os.close(descriptor)
+        raise ValueError("public assets destination changed during snapshot")
+    return descriptor, opened
+
+
+def _create_private_public_destination(parent_fd: int) -> tuple[str, int]:
+    """Create a private random child directory under a pinned destination."""
+    for _ in range(32):
+        name = f".public-snapshot-{secrets.token_hex(16)}"
+        try:
+            os.mkdir(name, mode=0o700, dir_fd=parent_fd)
+        except FileExistsError:
+            continue
+        try:
+            created = os.stat(name, dir_fd=parent_fd, follow_symlinks=False)
+        except OSError:
+            # The new name was already replaced; its identity is unknown, so
+            # leave it untouched rather than risk deleting another entry.
+            raise ValueError(
+                "public assets private destination changed during snapshot"
+            )
+        try:
+            descriptor = _open_created_public_destination_directory(
+                name,
+                parent_fd=parent_fd,
+                expected=created,
+            )
+        except Exception:
+            _remove_public_destination_entry(parent_fd, name, expected=created)
+            raise
+        return name, descriptor
+    raise FileExistsError("could not allocate a private public snapshot directory")
+
+
+def _destination_entry_matches(
+    parent_fd: int,
+    name: str,
+    expected: os.stat_result,
+) -> bool:
+    try:
+        current = os.stat(name, dir_fd=parent_fd, follow_symlinks=False)
+    except FileNotFoundError:
+        return False
+    return _same_inode(current, expected) and stat.S_IFMT(
+        current.st_mode
+    ) == stat.S_IFMT(expected.st_mode)
+
+
+def _manifest_children(
+    manifest: PublicSnapshotManifest,
+    prefix: tuple[str, ...],
+) -> dict[str, os.stat_result]:
+    child_length = len(prefix) + 1
+    return {
+        path[-1]: identity
+        for path, identity in manifest.items()
+        if len(path) == child_length and path[:-1] == prefix
+    }
+
+
+def _validate_public_snapshot_manifest(
+    directory_fd: int,
+    manifest: PublicSnapshotManifest,
+    *,
+    prefix: tuple[str, ...] = (),
+) -> None:
+    """Validate the exact no-follow destination tree against pinned identities."""
+    expected_children = _manifest_children(manifest, prefix)
+    try:
+        actual_names = set(os.listdir(directory_fd))
+    except OSError as exc:
+        raise ValueError("public assets snapshot contents changed") from exc
+    if actual_names != set(expected_children):
+        raise ValueError("public assets snapshot contents changed")
+
+    for name, expected in expected_children.items():
+        try:
+            current = os.stat(
+                name,
+                dir_fd=directory_fd,
+                follow_symlinks=False,
+            )
+        except OSError as exc:
+            raise ValueError("public assets snapshot contents changed") from exc
+        if not _same_snapshot_metadata(current, expected):
+            raise ValueError("public assets snapshot contents changed")
+
+        flags = (
+            _DESTINATION_DIRECTORY_FLAGS
+            if stat.S_ISDIR(expected.st_mode)
+            else _SOURCE_FILE_FLAGS
+        )
+        try:
+            descriptor = os.open(name, flags, dir_fd=directory_fd)
+        except OSError as exc:
+            raise ValueError("public assets snapshot contents changed") from exc
+        try:
+            opened = os.fstat(descriptor)
+            if not _same_snapshot_metadata(opened, expected):
+                raise ValueError("public assets snapshot contents changed")
+            if stat.S_ISDIR(expected.st_mode):
+                _validate_public_snapshot_manifest(
+                    descriptor,
+                    manifest,
+                    prefix=prefix + (name,),
+                )
+            elif not stat.S_ISREG(expected.st_mode):
+                raise ValueError("public assets snapshot contents changed")
+        finally:
+            os.close(descriptor)
+        try:
+            after = os.stat(
+                name,
+                dir_fd=directory_fd,
+                follow_symlinks=False,
+            )
+        except OSError as exc:
+            raise ValueError("public assets snapshot contents changed") from exc
+        if not _same_snapshot_metadata(after, expected):
+            raise ValueError("public assets snapshot contents changed")
+
+    try:
+        names_after = set(os.listdir(directory_fd))
+    except OSError as exc:
+        raise ValueError("public assets snapshot contents changed") from exc
+    if names_after != set(expected_children):
+        raise ValueError("public assets snapshot contents changed")
+
+
+def _remove_public_destination_entry(
+    parent_fd: int,
+    name: str,
+    *,
+    expected: os.stat_result,
+    manifest: PublicSnapshotManifest | None = None,
+    prefix: tuple[str, ...] = (),
+) -> bool:
+    """Remove only the entry whose identity was pinned by the caller."""
+    if not _destination_entry_matches(parent_fd, name, expected):
+        return False
+
+    if stat.S_ISDIR(expected.st_mode):
+        try:
+            descriptor = os.open(
+                name,
+                _DESTINATION_DIRECTORY_FLAGS,
+                dir_fd=parent_fd,
+            )
+        except OSError:
+            return False
+        try:
+            opened = os.fstat(descriptor)
+            if not _same_inode(opened, expected) or not stat.S_ISDIR(
+                opened.st_mode
+            ):
+                return False
+            expected_children = (
+                _manifest_children(manifest, prefix) if manifest is not None else {}
+            )
+            try:
+                actual_names = set(os.listdir(descriptor))
+            except OSError:
+                return False
+            if actual_names != set(expected_children):
+                return False
+            for child, child_expected in expected_children.items():
+                if not _remove_public_destination_entry(
+                    descriptor,
+                    child,
+                    expected=child_expected,
+                    manifest=manifest,
+                    prefix=prefix + (child,),
+                ):
+                    return False
+        finally:
+            os.close(descriptor)
+        if not _destination_entry_matches(parent_fd, name, expected):
+            return False
+        try:
+            os.rmdir(name, dir_fd=parent_fd)
+        except OSError:
+            return False
+        return True
+
+    if not stat.S_ISREG(expected.st_mode):
+        return False
+    try:
+        descriptor = os.open(
+            name,
+            _SOURCE_FILE_FLAGS,
+            dir_fd=parent_fd,
+        )
+    except OSError:
+        return False
+    try:
+        opened = os.fstat(descriptor)
+    finally:
+        os.close(descriptor)
+    if not _same_inode(opened, expected) or not stat.S_ISREG(opened.st_mode):
+        return False
+    if not _destination_entry_matches(parent_fd, name, expected):
+        return False
+    try:
+        os.unlink(name, dir_fd=parent_fd)
+    except OSError:
+        return False
+    return True
+
+
+def _rename_public_snapshot_entry(parent_fd: int, temporary_name: str) -> None:
+    os.rename(
+        temporary_name,
+        "public",
+        src_dir_fd=parent_fd,
+        dst_dir_fd=parent_fd,
+    )
+
+
+def _finalize_public_snapshot(
+    parent_fd: int,
+    temporary_name: str,
+    snapshot_fd: int,
+    manifest: PublicSnapshotManifest,
+) -> None:
+    """Install a snapshot only while its directory entry retains its identity."""
+    snapshot_identity = os.fstat(snapshot_fd)
+    if not _destination_entry_matches(
+        parent_fd,
+        temporary_name,
+        snapshot_identity,
+    ):
+        raise ValueError("public assets private destination changed before finalize")
+
+    _validate_public_snapshot_manifest(snapshot_fd, manifest)
+    _rename_public_snapshot_entry(parent_fd, temporary_name)
+
+    if not _destination_entry_matches(parent_fd, "public", snapshot_identity):
+        raise ValueError("installed public assets changed during finalize")
+    _validate_public_snapshot_manifest(snapshot_fd, manifest)
+
+
+def _snapshot_public_assets(
+    harbor_app_dir: Path,
+    generated_harbor_app_dir: Path,
+) -> None:
+    """Create and atomically install a no-follow snapshot of public assets."""
+    generated_fd, generated_identity = _open_pinned_public_destination(
+        generated_harbor_app_dir
+    )
+    source_fd = -1
+    temporary_name: str | None = None
+    destination_fd = -1
+    finalized = False
+    manifest: PublicSnapshotManifest = {}
+    try:
+        source_fd = _open_public_source_root(harbor_app_dir)
+        temporary_name, destination_fd = _create_private_public_destination(
+            generated_fd
+        )
+        _snapshot_public_directory(
+            source_fd,
+            destination_fd,
+            relative=Path(),
+            total_bytes=[0],
+            manifest=manifest,
+        )
+
+        try:
+            current_destination = generated_harbor_app_dir.lstat()
+        except OSError as exc:
+            raise ValueError("public assets destination changed during snapshot") from exc
+        if not _same_inode(generated_identity, current_destination):
+            raise ValueError("public assets destination changed during snapshot")
+
+        os.fchmod(destination_fd, stat.S_IMODE(os.fstat(source_fd).st_mode))
+        _finalize_public_snapshot(
+            generated_fd,
+            temporary_name,
+            destination_fd,
+            manifest,
+        )
+        finalized = True
+    finally:
+        if source_fd >= 0:
+            os.close(source_fd)
+        if not finalized and temporary_name is not None and destination_fd >= 0:
+            snapshot_identity = os.fstat(destination_fd)
+            for candidate in (temporary_name, "public"):
+                _remove_public_destination_entry(
+                    generated_fd,
+                    candidate,
+                    expected=snapshot_identity,
+                    manifest=manifest,
+                )
+        if destination_fd >= 0:
+            os.close(destination_fd)
+        os.close(generated_fd)
+
+
+def _root_app_copy_ignore(
+    harbor_app_dir: Path,
+    *,
+    exclude_input: bool,
+    exclude_public: bool,
+):
+    """Ignore opt-in roots only at harbor/app, never recursively."""
+    excluded = {
+        name
+        for name, enabled in (
+            ("input", exclude_input),
+            ("public", exclude_public),
+        )
+        if enabled
+    }
+
+    def ignore(directory: str, names: list[str]) -> set[str]:
+        if Path(directory) != harbor_app_dir:
+            return set()
+        return excluded.intersection(names)
+
+    return ignore if excluded else None
 
 
 def _agent_pip_package_names(
@@ -345,27 +987,25 @@ class FrontierCS20Adapter:
         )
         self._write_submission_config(env_dir, problem)
         harbor_app_dir = problem.problem_dir / "harbor" / "app"
-        _validate_public_assets_source(harbor_app_dir)
         generated_harbor_app_dir = env_dir / "harbor_app"
         generated_harbor_app_dir.mkdir(parents=True, exist_ok=True)
+        has_public_assets = _public_assets_opted_in(harbor_app_dir)
+        if has_public_assets:
+            _snapshot_public_assets(harbor_app_dir, generated_harbor_app_dir)
         if harbor_app_dir.exists():
             shutil.copytree(
                 harbor_app_dir,
                 generated_harbor_app_dir,
-                symlinks=True,
                 dirs_exist_ok=True,
-                ignore=(
-                    shutil.ignore_patterns("input")
-                    if self._visible_inputs(problem)
-                    else None
+                ignore=_root_app_copy_ignore(
+                    harbor_app_dir,
+                    exclude_input=bool(self._visible_inputs(problem)),
+                    exclude_public=has_public_assets,
                 ),
             )
 
-        _validate_public_assets_source(harbor_app_dir)
-        public_assets_dir = generated_harbor_app_dir / "public"
-        _validate_public_assets(public_assets_dir)
         judge_public_assets = ""
-        if public_assets_dir.is_dir():
+        if has_public_assets:
             judge_public_assets = (
                 "COPY harbor_app/public/ /judge/public/\n"
                 "ENV FRONTIER_PUBLIC_DIR=/judge/public\n"
