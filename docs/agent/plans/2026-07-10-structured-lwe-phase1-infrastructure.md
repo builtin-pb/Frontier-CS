@@ -582,7 +582,10 @@ Expected: no broad agent-workspace copy enters the judge.
 - Validate: four existing BBOPlace task directories
 - Validate: `tools/bboplace/check_generated_tasks.py`
 
-- [ ] **Step 1: Generate the no-public Erdos task without running it**
+- [x] **Step 1: Generate the no-public Erdos task without running it**
+
+Observed: Static adapter generation exited zero with `[OK] erdos_demo` and one
+task under `/tmp/frontier-cs-phase1-erdos`; nothing was executed.
 
 ```bash
 PYTHONPATH=adapters/frontier-cs-2.0/src \
@@ -595,7 +598,10 @@ uv run --no-sync python -m frontier_cs_2_0.main \
 
 Expected: one generated directory and no evaluator or Docker invocation.
 
-- [ ] **Step 2: Assert the no-public judge shape**
+- [x] **Step 2: Assert the no-public judge shape**
+
+Observed: All three assertions exited zero: no staged public directory, no
+public judge `COPY`, and no unresolved placeholder.
 
 ```bash
 test ! -d /tmp/frontier-cs-phase1-erdos/frontier-cs-2-0-erdos-demo/environment/harbor_app/public
@@ -607,7 +613,10 @@ test "$(grep -c '{judge_public_assets}' \
 
 Expected: all three commands exit zero.
 
-- [ ] **Step 3: Generate all BBOPlace tasks without running them**
+- [x] **Step 3: Generate all BBOPlace tasks without running them**
+
+Observed: Static generation exited zero with all four named tasks reported
+`[OK]` under `/tmp/frontier-cs-phase1-bboplace`.
 
 ```bash
 PYTHONPATH=adapters/frontier-cs-2.0/src \
@@ -624,7 +633,10 @@ uv run --no-sync python -m frontier_cs_2_0.main \
 
 Expected: four generated directories and no evaluator or Docker invocation.
 
-- [ ] **Step 4: Run the existing structural checker**
+- [x] **Step 4: Run the existing structural checker**
+
+Observed: The checker printed `Generated BBOPlace tasks match the expected
+Harbor flow`; both direct-task greps printed the JSON copy command.
 
 ```bash
 python3 tools/bboplace/check_generated_tasks.py /tmp/frontier-cs-phase1-bboplace
@@ -636,7 +648,10 @@ grep -F "cp /solution/reference.py /app/solution.json" \
 
 Expected: the checker prints `Generated BBOPlace tasks match the expected Harbor flow`, and each grep prints one JSON copy command.
 
-- [ ] **Step 5: Leave generated output isolated under the system temp root**
+- [x] **Step 5: Leave generated output isolated under the system temp root**
+
+Observed: Outputs remain at `/tmp/frontier-cs-phase1-erdos` and
+`/tmp/frontier-cs-phase1-bboplace`; no destructive cleanup was run.
 
 Record the two `/tmp/frontier-cs-phase1-*` paths in the phase log. They are
 outside the repository and may be reclaimed by the operating system; no
