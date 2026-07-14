@@ -915,7 +915,9 @@ git commit -m "feat(structured-lwe): parse cumulative witness ledgers"
 - Create: `2.0/problems/lwe_structured_recovery/tests/fixtures/submission_one_valid.json`
 - Create: `2.0/problems/lwe_structured_recovery/tests/test_evaluator_core.py`
 
-- [ ] **Step 1: Write the failing equal-score integration test**
+- [x] **Step 1: Write the failing equal-score integration test**
+
+  Observed: The original toy fixture had no valid witness, so the reviewed seam changed only `toy-uniform.b` and its digest to bind `[1,0,-1]` with residual `(1,-1,0,1)`. The one-of-two scoring test then established the intended missing-core RED.
 
 ```python
 from lwe_challenge.evaluator_core import evaluate_bytes
@@ -929,7 +931,9 @@ def test_one_of_two_valid_witnesses_scores_fifty(catalog, valid_submission_bytes
     assert result.metrics["solved_count"] == 1
 ```
 
-- [ ] **Step 2: Verify RED and implement the public result**
+- [x] **Step 2: Verify RED and implement the public result**
+
+  Observed: Implemented exact equal scoring, deeply immutable aggregate metrics, capped redacted examples, family/tier/octave diagnostics, and stable whole-ledger/path error boundaries. Submission reads are bounded, nonblocking, and regular-file checked; unexpected evaluator/I/O failures still propagate.
 
 ```python
 @dataclass(frozen=True, slots=True)
@@ -960,9 +964,13 @@ errors and every unexpected evaluator exception propagate as infrastructure
 failures. Public predicate failures are normal rejection codes, not exceptions,
 and one invalid entry never erases another ID's valid score.
 
-- [ ] **Step 3: Add RED→GREEN tests for partial credit, malformed whole-file score zero, an invalid record beside a valid record, and alternate-witness acceptance**
+- [x] **Step 3: Add RED→GREEN tests for partial credit, malformed whole-file score zero, an invalid record beside a valid record, and alternate-witness acceptance**
 
-- [ ] **Step 4: Run and commit**
+  Observed: Added the planned integration cases plus duplicate/unknown aggregates, 20-example cap, metadata metrics, alternate-witness acceptance, redaction scans, file-growth/short-read/path hazards, and infrastructure-exception propagation.
+
+- [x] **Step 4: Run and commit**
+
+  Observed: Final focused suite passed (`32 passed`); evaluator plus submission/verification passed (`109 passed`). Spec and quality re-reviews approved the slice. Nested metrics remain truly immutable; Task 11 now owns recursive conversion to a separate JSON-native snapshot.
 
 Run: `PYTHONPATH=2.0/problems/lwe_structured_recovery/harbor/app/public uv run pytest 2.0/problems/lwe_structured_recovery/tests/test_evaluator_core.py -q`
 
@@ -1263,8 +1271,14 @@ def prepare() -> dict[str, object]:
 def evaluate(solution_path: str) -> tuple[float, float, str, dict[str, object]]:
     catalog = _catalog()
     result = evaluate_path(solution_path, catalog=catalog)
-    return result.score, result.score_unbounded, result.message, dict(result.metrics)
+    return result.score, result.score_unbounded, result.message, _plain_data(result.metrics)
 ```
+
+`_plain_data` recursively copies immutable internal mappings/tuples into fresh
+plain `dict`/`list` containers and accepts only JSON scalar leaves. A shallow
+`dict(result.metrics)` is insufficient because the evaluator core deliberately
+keeps nested metrics immutable. Test that `json.dumps(_plain_data(metrics))`
+succeeds and that mutating the returned snapshot cannot mutate the core result.
 
 Resolve the catalog in this order: the explicit test/development override
 `FCS_STRUCTURED_LWE_CATALOG`; `FRONTIER_PUBLIC_DIR/catalog.jsonl` in the judge;

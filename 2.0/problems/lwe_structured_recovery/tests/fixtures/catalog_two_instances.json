@@ -14,7 +14,7 @@
         "alphabet": [],
         "row_weight": null
       },
-      "b": [1, 2, 3, 4],
+      "b": [0, 11, 15, 12],
       "secret_distribution": {
         "kind": "iid_alphabet",
         "alphabet": [-1, 0, 1],
@@ -51,7 +51,7 @@
       "calibration_model_id": "",
       "predicted_runtime_seconds": 0.0,
       "measured_runtime_seconds": null,
-      "instance_digest": "9b16ba23a243b51c26025b941ecd3f431460147fa0097f1f348ba3d563819999"
+      "instance_digest": "98f107982d02431666904cbd23d6e6179d5b01c80578f7ea0ddbf7ddfb030282"
     },
     {
       "schema_version": 1,
