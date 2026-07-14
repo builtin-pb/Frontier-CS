@@ -764,7 +764,9 @@ git commit -m "feat(structured-lwe): materialize SHAKE matrices"
 - Create: `2.0/problems/lwe_structured_recovery/harbor/app/public/lwe_challenge/verification.py`
 - Create: `2.0/problems/lwe_structured_recovery/tests/test_verification.py`
 
-- [ ] **Step 1: Write failing centered-modulus boundary tests**
+- [x] **Step 1: Write failing centered-modulus boundary tests**
+
+  Observed: Added the negative-even-tie behavior first and observed the intended missing-module failure.
 
 ```python
 from lwe_challenge.verification import centered_mod
@@ -774,7 +776,9 @@ def test_centered_mod_uses_negative_even_tie() -> None:
     assert tuple(centered_mod(x, 8) for x in range(8)) == (0, 1, 2, 3, -4, -3, -2, -1)
 ```
 
-- [ ] **Step 2: Verify RED and implement exact integer predicates**
+- [x] **Step 2: Verify RED and implement exact integer predicates**
+
+  Observed: Implemented frozen aggregate verdicts, strict secret shape/predicate checks, centered residuals, and deterministic integer-only norm bounds with stable codes.
 
 ```python
 @dataclass(frozen=True, slots=True)
@@ -803,17 +807,23 @@ integers only. Return stable public codes such as `ok`, `wrong_length`,
 because they are computable from public data; the official evaluator must not
 return those candidate-specific values in its message or metrics.
 
-- [ ] **Step 3: Add a synthetic valid witness test that derives `b` from public `A,s,e`**
+- [x] **Step 3: Add a synthetic valid witness test that derives `b` from public `A,s,e`**
+
+  Observed: Real SHAKE matrix tests derive `b` from public values and prove two distinct secrets are accepted when each satisfies the published predicates; no identity comparison exists.
 
 Construct the fixture in the test, verify the chosen secret, then verify that a different planted-independent secret is also accepted when it satisfies the same public predicates. This proves the checker does not compare identities.
 
-- [ ] **Step 4: Add one RED→GREEN test per rejection code**
+- [x] **Step 4: Add one RED→GREEN test per rejection code**
+
+  Observed: Added behavior coverage for all shape, alphabet/modulus, nonzero-count, and error-norm/weight rejection codes, canonical full-field secrets, immutability, and leakage boundaries.
 
 Keep each test to one observable code and use real matrix reconstruction rather
 than mocks. Include canonical full-field secret acceptance and error-weight
 rejection.
 
-- [ ] **Step 5: Run and commit**
+- [x] **Step 5: Run and commit**
+
+  Observed: Focused verification passed (`31 passed`), with `90 passed` across verification, matrix, and schema. Independent spec and quality reviews approved the slice with no Critical or Important findings.
 
 Run: `PYTHONPATH=2.0/problems/lwe_structured_recovery/harbor/app/public uv run pytest 2.0/problems/lwe_structured_recovery/tests/test_verification.py -q`
 
