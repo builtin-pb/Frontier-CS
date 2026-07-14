@@ -1196,7 +1196,9 @@ git commit -m "feat(structured-lwe): add secret-safe synthetic generator"
 - Create: `2.0/problems/lwe_structured_recovery/harbor/app/public/lwe_instance.py`
 - Create: `2.0/problems/lwe_structured_recovery/tests/test_public_facade.py`
 
-- [ ] **Step 1: Write a failing end-to-end facade test**
+- [x] **Step 1: Write a failing end-to-end facade test**
+
+  Observed: Added the public Phase 3 workflow test before `lwe_instance` existed and observed the intended missing-module failure.
 
 ```python
 import lwe_instance
@@ -1219,7 +1221,9 @@ def test_public_facade_supports_phase3_solver_workflow(catalog_path) -> None:
     }
 ```
 
-- [ ] **Step 2: Implement wrapper objects without exposing internals**
+- [x] **Step 2: Implement wrapper objects without exposing internals**
+
+  Observed: Implemented immutable `Catalog` and `Instance` wrappers with the complete fixed primitive property surface, cached one-wrapper-per-ID identity, stable catalog order, and direct delegation to public matrix and witness-verification behavior. The supported surface and repr expose neither schema records nor catalog filesystem paths.
 
 `lwe_instance.Catalog` wraps `schema.Catalog`; `get` returns an
 `lwe_instance.Instance`. `Instance` exposes all read-only primitive properties
@@ -1235,11 +1239,15 @@ identity and ordering. Do not expose the wrapped `InstanceSpec`, generator
 private types, filesystem paths beyond the public relative `analysis_path`, or
 any mutator.
 
-- [ ] **Step 3: Add a public-surface test**
+- [x] **Step 3: Add a public-surface test**
+
+  Observed: Pinned the exact three exports, complete property/method surface, primitive return values, immutability, wrapper identity/order, known matrix outputs, validation results, error behavior, and absence of private generator/solver/attack APIs.
 
 Assert `set(lwe_instance.__all__) == {"Catalog", "Instance", "WitnessVerdict"}` and that no test or Phase-3 caller needs a private module import.
 
-- [ ] **Step 4: Run and commit**
+- [x] **Step 4: Run and commit**
+
+  Observed: Focused facade tests passed (`5 passed`), facade plus schema/matrix/verification passed (`97 passed`), and the combined Tasks 8–10 check passed (`160 passed`). Independent root specification and quality reviews, compilation, and additional public-only identity/typing probes approved the slice with no findings.
 
 Run: `PYTHONPATH=2.0/problems/lwe_structured_recovery/harbor/app/public uv run pytest 2.0/problems/lwe_structured_recovery/tests/test_public_facade.py -q`
 
