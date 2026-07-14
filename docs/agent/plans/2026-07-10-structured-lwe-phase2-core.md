@@ -637,7 +637,9 @@ git commit -m "feat(structured-lwe): add strict public catalog schema"
 - Create: `2.0/problems/lwe_structured_recovery/harbor/app/tools/audit/matrix_ref.c`
 - Create: `2.0/problems/lwe_structured_recovery/tests/test_shake_matrix.py`
 
-- [ ] **Step 1: Write a failing golden-vector test for SHAKE byte order**
+- [x] **Step 1: Write a failing golden-vector test for SHAKE byte order**
+
+  Observed: The standalone `hashlib` computation corrected the draft prefix to `27027578f05e9bd4933317218e161c7e`; the missing-module test then established RED.
 
 ```python
 from lwe_challenge.shake import ShakeStream
@@ -656,7 +658,9 @@ and commit the reviewed literal with the implementation. This is a primitive
 test-vector computation, not a recovery attempt, so it is permitted before the
 execution gate.
 
-- [ ] **Step 2: Verify RED, then implement `ShakeStream` and unbiased `randbelow`**
+- [x] **Step 2: Verify RED, then implement `ShakeStream` and unbiased `randbelow`**
+
+  Observed: Implemented exact buffered block construction and unbiased little-endian rejection sampling, including zero/invalid boundary coverage and permanent `UINT32_MAX` parity.
 
 Implement exact methods `ShakeStream.__init__(*, domain: bytes, seed: bytes)
 -> None`, `ShakeStream.read(count: int) -> bytes`, and
@@ -668,7 +672,9 @@ upper`; read a little-endian `width`-byte integer until it is below `limit`,
 then return it modulo `upper`. Reject `upper <= 0`; unconditioned modular
 reduction is forbidden.
 
-- [ ] **Step 3: Write the failing dense-row and matvec tests**
+- [x] **Step 3: Write the failing dense-row and matvec tests**
+
+  Observed: Added public-API row and streamed matvec tests before the matrix module existed, then satisfied them without full-matrix materialization.
 
 ```python
 from lwe_challenge.matrix import iter_rows, matvec_mod
@@ -683,7 +689,9 @@ def test_streamed_matvec_matches_materialized_oracle(catalog: Catalog) -> None:
     assert matvec_mod(inst, secret) == oracle
 ```
 
-- [ ] **Step 4: Implement the matrix API**
+- [x] **Step 4: Implement the matrix API**
+
+  Observed: Implemented exact length-framed domains, row separation, all four matrix structures, row blocks, and validated modular matvec under the schema bounds.
 
 Implement exact functions `iter_rows(instance: InstanceSpec) ->
 Iterator[tuple[int, ...]]`, `materialize_row_block(instance: InstanceSpec,
@@ -708,11 +716,15 @@ nonzero alphabet.
 `materialize_row_block` validates `0 <= start <= stop <= m` and streams only
 the requested rows; `materialize_rows` is exactly the block `[0,m)`.
 
-- [ ] **Step 5: Add vertical RED→GREEN tests for all four matrix kinds**
+- [x] **Step 5: Add vertical RED→GREEN tests for all four matrix kinds**
+
+  Observed: Retained reviewed Python golden rows and behavior coverage for dimensions, alphabets, sparse weights, repeatability, row separation, invalid inputs, and saturated sparse support.
 
 Each test asserts dimensions, coefficient domain, exact row weight where applicable, repeatability, and differing rows under row-domain separation. Add and satisfy one kind at a time.
 
-- [ ] **Step 6: Add the independent native materializer and cross-check**
+- [x] **Step 6: Add the independent native materializer and cross-check**
+
+  Observed: Added an independently coded C11/FIPS-202 oracle with strict CLI validation. Python/native checks cover every kind, at least three rows, rejection-heavy moduli/alphabet sizes, multi-row ranges, `UINT32_MAX`, full sparse support, malformed CLI, and public-only argv. Review added 30-second compile and 10-second execution timeouts to prevent hung tests.
 
 Write a standalone C11 row/range materializer that contains an independently
 coded FIPS-202 SHAKE-256/Keccak permutation with an MIT/CC0-compatible
@@ -735,7 +747,9 @@ for every matrix kind, at least three row indices, rejection-heavy non-power-
 failure, not a skip. Include one multi-row range test and one malformed-CLI
 test, and retain reviewed Python/native golden rows for all four kinds.
 
-- [ ] **Step 7: Run and commit**
+- [x] **Step 7: Run and commit**
+
+  Observed: Final focused suite passed (`48 passed`); strict compilation, ASan/UBSan probes, full spec review, and code-quality re-review passed with no remaining findings. The slice was accepted under the planned `feat(structured-lwe): materialize SHAKE matrices` boundary.
 
 Run: `PYTHONPATH=2.0/problems/lwe_structured_recovery/harbor/app/public uv run pytest 2.0/problems/lwe_structured_recovery/tests/test_shake_matrix.py -q`
 
