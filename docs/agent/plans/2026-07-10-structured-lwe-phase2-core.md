@@ -986,7 +986,9 @@ git commit -m "feat(structured-lwe): score secretless witnesses equally"
 - Create: `2.0/problems/lwe_structured_recovery/harbor/app/add_solution.py`
 - Create: `2.0/problems/lwe_structured_recovery/tests/test_ledger.py`
 
-- [ ] **Step 1: Write the failing idempotent-merge test**
+- [x] **Step 1: Write the failing idempotent-merge test**
+
+  Observed: Added the idempotent-merge behavior before the ledger module existed and observed the intended import failure.
 
 ```python
 from lwe_challenge.ledger import Ledger, merge_witness
@@ -998,7 +1000,9 @@ def test_identical_merge_is_idempotent() -> None:
     assert merged == ledger
 ```
 
-- [ ] **Step 2: Implement ledger APIs with atomic canonical output**
+- [x] **Step 2: Implement ledger APIs with atomic canonical output**
+
+  Observed: Implemented bounded duplicate-safe loading, immutable canonical ledgers, conflict-aware merges, and descriptor-isolated atomic replacement. Review hardening added a stable sibling `fcntl` transaction lock, pre-created private quarantine, foreign-inode recovery, ledger/lock symlink rejection, complete short-write handling, and parent-directory `fsync` after replacement.
 
 ```python
 @dataclass(frozen=True, slots=True)
@@ -1018,13 +1022,19 @@ newline. Write to an exclusive sibling temporary file, flush and `os.fsync`,
 then `os.replace`; on failure unlink only the temporary file created by that
 call. Refuse a conflicting existing ID unless `replace=True`.
 
-- [ ] **Step 3: Add RED→GREEN tests for conflict refusal, explicit replacement, canonical ordering, and atomic preservation when serialization fails**
+- [x] **Step 3: Add RED→GREEN tests for conflict refusal, explicit replacement, canonical ordering, and atomic preservation when serialization fails**
 
-- [ ] **Step 4: Implement `add_solution.py` as a thin CLI**
+  Observed: Added the planned cases plus size/depth/node bounds, malformed records, nonregular paths, cleanup races, foreign regular/symlink/FIFO/directory recovery, partial writes, durability ordering, lock safety, and synchronized multiprocess lost-update/conflict regressions.
+
+- [x] **Step 4: Implement `add_solution.py` as a thin CLI**
+
+  Observed: Added the sanitized thin CLI; its lock encloses the post-acquisition reread, merge, and atomic write, and successful output reveals only the updated witness count.
 
 Accept `INSTANCE_ID`, a comma-separated integer vector, optional `--ledger /app/solution.json`, and `--replace`. Import only `lwe_challenge.ledger`; print the updated witness count without printing secrets.
 
-- [ ] **Step 5: Run and commit**
+- [x] **Step 5: Run and commit**
+
+  Observed: Final focused suite passed (`67 passed`), the combined Tasks 8–10 check passed (`160 passed`), and repeated reviewer stress found no lost updates in 100 distinct-ID races or incorrect outcomes in 100 same-ID races. Independent final specification and quality reviews approved the slice with no remaining findings.
 
 Run: `PYTHONPATH=2.0/problems/lwe_structured_recovery/harbor/app/public uv run pytest 2.0/problems/lwe_structured_recovery/tests/test_ledger.py -q`
 
