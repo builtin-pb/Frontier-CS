@@ -838,7 +838,9 @@ git commit -m "feat(structured-lwe): verify public LWE predicates"
 - Create: `2.0/problems/lwe_structured_recovery/harbor/app/public/lwe_challenge/submission.py`
 - Create: `2.0/problems/lwe_structured_recovery/tests/test_submission.py`
 
-- [ ] **Step 1: Write the failing conflicting-duplicate test**
+- [x] **Step 1: Write the failing conflicting-duplicate test**
+
+  Observed: Added the conflicting-duplicate behavior first and observed the intended missing-module failure.
 
 ```python
 from lwe_challenge.submission import parse_submission
@@ -854,7 +856,9 @@ def test_conflicting_duplicate_invalidates_only_that_id(catalog) -> None:
     assert parsed.conflicted_ids == ("toy-uniform",)
 ```
 
-- [ ] **Step 2: Verify RED and implement the parser contract**
+- [x] **Step 2: Verify RED and implement the parser contract**
+
+  Observed: Implemented immutable parsed records, strict whole-ledger bounds, stable decoded-contract codes, duplicate poisoning across malformed/unknown occurrences, and deterministic duplicate/conflict/unknown metadata.
 
 ```python
 @dataclass(frozen=True, slots=True)
@@ -889,9 +893,13 @@ wrong top-level shape, excessive file/record/depth/node limits, and malformed
 UTF-8/JSON are whole-ledger errors; malformed individual records, unknown IDs,
 and invalid witnesses leave unrelated unique entries eligible.
 
-- [ ] **Step 3: Add separate RED→GREEN tests for duplicate JSON keys, identical duplicates, unknown IDs, booleans, oversized integers, extra keys, and record limits**
+- [x] **Step 3: Add separate RED→GREEN tests for duplicate JSON keys, identical duplicates, unknown IDs, booleans, oversized integers, extra keys, and record limits**
 
-- [ ] **Step 4: Run and commit**
+  Observed: Added the planned cases plus byte/depth/node bounds, immutability, malformed-copy poisoning, and configuration validation. Quality review drove complete normalization of raw JSON errors: attacker-controlled keys are absent from messages, causes, contexts, and formatted tracebacks.
+
+- [x] **Step 4: Run and commit**
+
+  Observed: Final focused suite passed (`46 passed`), and submission plus strict-JSON/schema passed (`73 passed`). Independent spec review and two quality re-review rounds approved the slice with no remaining findings.
 
 Run: `PYTHONPATH=2.0/problems/lwe_structured_recovery/harbor/app/public uv run pytest 2.0/problems/lwe_structured_recovery/tests/test_submission.py -q`
 
