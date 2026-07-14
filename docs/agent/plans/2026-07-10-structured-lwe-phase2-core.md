@@ -1263,7 +1263,9 @@ git commit -m "feat(structured-lwe): freeze public instance facade"
 - Create: `2.0/problems/lwe_structured_recovery/evaluate.sh`
 - Create: `2.0/problems/lwe_structured_recovery/tests/test_fcs_wrapper.py`
 
-- [ ] **Step 1: Write the failing FCS tuple-contract test**
+- [x] **Step 1: Write the failing FCS tuple-contract test**
+
+  Observed: Added the four-tuple contract before the task evaluator existed and observed the intended missing-file failure.
 
 ```python
 from pathlib import Path
@@ -1280,7 +1282,9 @@ def test_fcs_evaluator_returns_public_four_tuple(task_dir: Path, task_module_loa
     assert metrics["instance_count"] == 2
 ```
 
-- [ ] **Step 2: Implement the evaluator with a strict infrastructure boundary**
+- [x] **Step 2: Implement the evaluator with a strict infrastructure boundary**
+
+  Observed: Implemented override→judge→source catalog resolution, exact production sidecar and 200-record checks, path+verified-digest cache isolation, recursive detached JSON-native metrics, and narrow submission-vs-infrastructure exception boundaries. Quality review exposed a short-read assumption in the schema reader reached after preverification; a bounded EOF/`MAX_CATALOG_BYTES + 1` loop and full `prepare()` regression now preserve valid catalogs across short kernel reads.
 
 `evaluator.py` resolves the explicit test override first. Otherwise use
 `FRONTIER_PUBLIC_DIR` when present, then `harbor/app/public` beside the
@@ -1324,13 +1328,19 @@ inside `evaluate_path`. Unexpected implementation errors propagate as
 infrastructure failures rather than being charged to the agent. Do not include
 exception text in returned values.
 
-- [ ] **Step 3: Create `evaluate.sh`**
+- [x] **Step 3: Create `evaluate.sh`**
+
+  Observed: Added an executable strict-Bash wrapper using the fixed Harbor solution path and script-relative Python evaluator. The CLI emits only the public message to stderr and the score pair as its final stdout line; infrastructure failures exit nonzero without a score or traceback.
 
 Use strict Bash, locate `/work/execution_env/solution_env/solution.json`, and run `python3 evaluator.py "$SOLUTION"`. `evaluator.py`'s CLI must print its public message to stderr and `score score_unbounded` as the final stdout line.
 
-- [ ] **Step 4: Add RED→GREEN tests for judge/source catalog precedence, cache isolation between overrides, production sidecar mismatch, production row-count mismatch, preparation failure propagation, unexpected matrix exception propagation, missing solution file, malformed ledger, valid partial ledger, and absence of tracebacks/paths/secrets/residuals in public output**
+- [x] **Step 4: Add RED→GREEN tests for judge/source catalog precedence, cache isolation between overrides, production sidecar mismatch, production row-count mismatch, preparation failure propagation, unexpected matrix exception propagation, missing solution file, malformed ledger, valid partial ledger, and absence of tracebacks/paths/secrets/residuals in public output**
 
-- [ ] **Step 5: Run and commit**
+  Observed: Added all planned cases plus exact sidecar formatting, no synthetic fallback, override removal, relative/absolute cache identity, nonfinite/non-JSON metrics, FIFO rejection, sanitized CLI failures, fixed shell syntax, digest TOCTOU, and forced seven-byte reads through both preverification and schema loading.
+
+- [x] **Step 5: Run and commit**
+
+  Observed: Final focused wrapper suite passed (`31 passed`), schema plus wrapper passed (`44 passed`), and wrapper/core/submission/schema passed (`122 passed`). Compilation, Bash syntax, and diff checks passed. Independent specification and quality re-reviews approved the slice with no remaining Critical or Important findings.
 
 Run: `PYTHONPATH=2.0/problems/lwe_structured_recovery/harbor/app/public uv run pytest 2.0/problems/lwe_structured_recovery/tests/test_fcs_wrapper.py -q`
 

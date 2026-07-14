@@ -286,7 +286,14 @@ def _read_regular_catalog(path: Path) -> bytes:
         metadata = os.fstat(fd)
         if not stat.S_ISREG(metadata.st_mode):
             raise ValueError("catalog path must be a regular file")
-        return os.read(fd, MAX_CATALOG_BYTES + 1)
+        data = bytearray()
+        limit = MAX_CATALOG_BYTES + 1
+        while len(data) < limit:
+            chunk = os.read(fd, min(1024 * 1024, limit - len(data)))
+            if not chunk:
+                break
+            data.extend(chunk)
+        return bytes(data)
     finally:
         os.close(fd)
 

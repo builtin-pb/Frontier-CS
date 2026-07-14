@@ -397,7 +397,8 @@ def test_catalog_enforces_jsonl_record_and_byte_limits(
     monkeypatch.setattr(os, "close", tracking_close)
     Catalog.load(FIXTURE_PATH)
     assert open_count == 1
-    assert read_sizes == [schema.MAX_CATALOG_BYTES + 1]
+    assert len(read_sizes) >= 2
+    assert all(0 < size <= 1024 * 1024 for size in read_sizes)
     assert close_count == 1
     assert open_flags[0] & os.O_NONBLOCK
     if hasattr(os, "O_CLOEXEC"):
