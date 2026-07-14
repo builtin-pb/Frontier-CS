@@ -390,7 +390,7 @@ correction if the implementation does not pass it.
 
 - [x] **Step 5: Run the module tests and commit**
 
-  Observed: The final focused suite passed (`12 passed`) and the current task-plus-registration suite passed (`20 passed`). Independent specification review passed; code-quality re-review approved the hardened implementation with no remaining findings. The slice was accepted under the planned `feat(structured-lwe): reject ambiguous JSON` commit boundary.
+  Observed: The original hardened suite passed (`12 passed`) before Task 3 seam review added two Unicode-surrogate regressions. The final strict-JSON suite passes (`14 passed`); independent specification and code-quality review approved the decoder boundary.
 
 Run: `PYTHONPATH=2.0/problems/lwe_structured_recovery/harbor/app/public uv run pytest 2.0/problems/lwe_structured_recovery/tests/test_strict_json.py -q`
 
@@ -409,7 +409,9 @@ git commit -m "feat(structured-lwe): reject ambiguous JSON"
 - Create: `2.0/problems/lwe_structured_recovery/tests/fixtures/catalog_two_instances.json`
 - Create: `2.0/problems/lwe_structured_recovery/tests/test_schema.py`
 
-- [ ] **Step 1: Write the failing minimal-catalog test**
+- [x] **Step 1: Write the failing minimal-catalog test**
+
+  Observed: Added the public `Catalog.load` fixture test and observed the intended import failure before `schema.py` existed.
 
 ```python
 from pathlib import Path
@@ -426,11 +428,15 @@ def test_catalog_loads_dimensions_and_public_predicates() -> None:
     assert toy.error.max_abs == 1
 ```
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
+
+  Observed: The first focused run failed with `ModuleNotFoundError: lwe_challenge.schema`, establishing the missing schema behavior.
 
 Expected: FAIL importing `lwe_challenge.schema.Catalog`.
 
-- [ ] **Step 3: Add immutable schema types with exact signatures**
+- [x] **Step 3: Add immutable schema types with exact signatures**
+
+  Observed: Implemented the frozen/slotted schema and strict JSON/JSONL loaders. Parallel review added bounded-input hardening for numeric conversion, centered-binomial `eta`, Unicode surrogates, safe ASCII IDs, nonempty catalogs, operational dimensions, catalog-wide work, and regular-file reads; all fixes received regression tests and re-review.
 
 ```python
 @dataclass(frozen=True, slots=True)
@@ -527,8 +533,10 @@ uses an immutable ID index and raises `KeyError(instance_id)` for a miss.
 
 `Catalog.load` must use `loads_object`, reject unknown keys at every nesting
 level, require schema version `1`, require unique IDs, reject booleans wherever
-an integer or float is required, and enforce `n,m > 0`, `q >= 3`, `len(b) ==
-m`, `0 <= b_i < q`, 32-byte lowercase hexadecimal matrix seeds, expansion
+an integer or float is required, require instance IDs to match
+`[A-Za-z0-9][A-Za-z0-9._-]{0,63}`, and enforce `1 <= n <= 4096`, `1 <= m <=
+65536`, `3 <= q <= 2**32 - 1`, `n*m <= 2**26`, `len(b) == m`, `0 <= b_i <
+q`, 32-byte lowercase hexadecimal matrix seeds, expansion
 domain `FCS-STRUCTURED-LWE-MATRIX-v1`, valid sparse row weights, and sorted
 unique alphabets with no two values congruent modulo `q`. Small alphabets use
 the unique centered representatives (so `-1` is valid); `uniform` and
@@ -578,26 +586,38 @@ record after deleting exactly `instance_digest`, `analysis_path`,
 generator-version fields remain bound. Schema validation and generation share
 this function; the Phase 4 release auditor independently recomputes it.
 
-When the suffix is `.jsonl`, bound the entire file at 64 MiB and 200 records,
-require LF line endings, a final newline, no blank lines, one strict object per
+Read the catalog once through a nonblocking file descriptor, require a regular
+file, and bound the read itself to 64 MiB plus one sentinel byte. Reject Unicode
+surrogate code points before canonical UTF-8 encoding. Across either catalog
+format, require at least one record and at most 200, and require aggregate
+`sum(n*m) <= 2**28`; these operational bounds are provisional and Phase 4 must
+review them before admitting production parameter specs.
+
+When the suffix is `.jsonl`, require LF line endings, a final newline, no blank lines, one strict object per
 line, each line byte-equal to `canonical_record_bytes(record)`, and strictly
 increasing instance IDs. Derive `catalog_id` from SHA-256 of the exact complete
 file and reject duplicate IDs across lines. A one-record canonical JSONL is
 valid so Phase 4 can load each staging record before admission. This is the
 production/staging format. The `.json` form has exactly the two top-level keys
 `schema_version` and `instances` for synthetic tests; it has the same
-64 MiB/200-record bounds, derives rather than embeds `catalog_id`, and rejects
+bounded-read, record-count, and aggregate-work limits, derives rather than embeds `catalog_id`, and rejects
 any other top-level key.
 
-- [ ] **Step 4: Add the concrete two-instance fixture**
+- [x] **Step 4: Add the concrete two-instance fixture**
+
+  Observed: Added the checked two-instance synthetic fixture with distinct seeds and independently recomputed digests.
 
 Use `toy-uniform` with `(n,m,q)=(3,4,17)` and `toy-sparse` with `(4,3,19)`. Give each a distinct 64-hex-character seed, inline `b`, explicit predicates, and cohort `synthetic`; set `octave` to `null`.
 
-- [ ] **Step 5: Add separate failing tests for unknown nested fields, duplicate IDs, wrong `b` length, invalid sparse weight, secret-distribution/predicate mismatch, canonical full-field secrets, error-distribution/predicate mismatch, tier/cohort/bin/octave mismatch, digest mismatch, canonical one-record JSONL loading, noncanonical JSONL bytes, and JSONL record/byte limits**
+- [x] **Step 5: Add separate failing tests for unknown nested fields, duplicate IDs, wrong `b` length, invalid sparse weight, secret-distribution/predicate mismatch, canonical full-field secrets, error-distribution/predicate mismatch, tier/cohort/bin/octave mismatch, digest mismatch, canonical one-record JSONL loading, noncanonical JSONL bytes, and JSONL record/byte limits**
+
+  Observed: Completed all thirteen planned behavior items. Review-driven cases now also cover every distribution/calibration branch, huge numeric inputs, allocation-free `eta` validation, Unicode and path hazards, exact and over resource bounds, aggregate JSONL work, nonempty catalogs, and nonregular-file rejection; named invalid records refresh their digests so validation-order assumptions do not mask the intended invariant.
 
 Use `tmp_path` to write each malformed catalog. Run each new test before changing `schema.py`, confirm its assertion fails for the named validation, then implement that validation.
 
-- [ ] **Step 6: Run and commit**
+- [x] **Step 6: Run and commit**
+
+  Observed: Final focused results are `14 passed` for strict JSON and `13 passed` for schema (`27 passed` combined), plus the root registration test. Two parallel spec audits, 266 original adversarial probes, 319 seam probes, and final quality checks approved the slice. The independently computed Task 4 SHAKE prefix was also corrected in this plan before matrix implementation.
 
 Run: `PYTHONPATH=2.0/problems/lwe_structured_recovery/harbor/app/public uv run pytest 2.0/problems/lwe_structured_recovery/tests/test_schema.py -q`
 
@@ -625,7 +645,7 @@ from lwe_challenge.shake import ShakeStream
 
 def test_shake_stream_has_stable_first_block() -> None:
     stream = ShakeStream(domain=b"FCS-STRUCTURED-LWE-TEST-v1", seed=bytes(32))
-    assert stream.read(16).hex() == "4f2fbb9e0f5c0d503ad7b6d094475348"
+    assert stream.read(16).hex() == "27027578f05e9bd4933317218e161c7e"
 ```
 
 Before implementation, compute and review this golden value once with a

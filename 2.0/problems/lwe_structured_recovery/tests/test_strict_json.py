@@ -38,6 +38,16 @@ def test_malformed_utf8_is_rejected() -> None:
         loads_object(b'{"value":"\xff"}', max_bytes=100)
 
 
+@pytest.mark.parametrize(
+    "data",
+    [b'{"value":"\\ud800"}', b'{"\\udfff":0}'],
+    ids=["value", "object-key"],
+)
+def test_unicode_surrogates_are_rejected(data: bytes) -> None:
+    with pytest.raises(JsonContractError, match="^Unicode surrogate in JSON string$"):
+        loads_object(data, max_bytes=100)
+
+
 def test_non_object_input_is_rejected() -> None:
     with pytest.raises(JsonContractError, match="top-level JSON value must be an object"):
         loads_object(b"[]", max_bytes=100)

@@ -9,9 +9,15 @@ class JsonContractError(ValueError):
     """The input violates a bounded, unambiguous JSON contract."""
 
 
+def _reject_unicode_surrogates(value: str) -> None:
+    if any(0xD800 <= ord(character) <= 0xDFFF for character in value):
+        raise JsonContractError("Unicode surrogate in JSON string")
+
+
 def _pairs(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
     out: dict[str, Any] = {}
     for key, value in pairs:
+        _reject_unicode_surrogates(key)
         if key in out:
             raise JsonContractError(f"duplicate JSON key: {key}")
         out[key] = value
@@ -39,7 +45,9 @@ def _check_shape(value: Any, *, max_depth: int, max_nodes: int) -> None:
             raise JsonContractError(f"JSON exceeds {max_nodes} nodes")
         if depth > max_depth:
             raise JsonContractError(f"JSON exceeds depth {max_depth}")
-        if isinstance(node, dict):
+        if isinstance(node, str):
+            _reject_unicode_surrogates(node)
+        elif isinstance(node, dict):
             for key, child in node.items():
                 visit(key, depth + 1)
                 visit(child, depth + 1)
