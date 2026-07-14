@@ -282,6 +282,44 @@ def test_plain_metrics_are_json_native_and_detached_from_the_core_result(
     assert core_result.metrics["invalid_examples"] == ()
 
 
+def test_hard_octave_metrics_are_json_native_end_to_end(
+    task_dir: Path, task_module_loader, monkeypatch, tmp_path: Path
+) -> None:
+    source = json.loads(
+        (task_dir / "tests" / "fixtures" / "catalog_two_instances.json")
+        .read_text(encoding="utf-8")
+    )["instances"][0]
+    record = dict(source)
+    record["tier"] = "hard"
+    record["cohort"] = "ladder"
+    record["runtime_bin"] = "H2"
+    record["octave"] = 2
+    record["instance_digest"] = compute_instance_digest(record)
+    catalog_path = tmp_path / "hard-catalog.json"
+    catalog_path.write_text(
+        json.dumps(
+            {"schema_version": 1, "instances": [record]},
+            separators=(",", ":"),
+        ),
+        encoding="utf-8",
+    )
+    module = _load_with_override(
+        task_dir=task_dir,
+        task_module_loader=task_module_loader,
+        monkeypatch=monkeypatch,
+        catalog_path=catalog_path,
+        module_name="lwe_evaluator_hard_octave_metrics",
+    )
+
+    _score, _unbounded, _message, metrics = module.evaluate(
+        str(task_dir / "reference.json")
+    )
+
+    assert metrics["hard_octave_totals"] == {"2": 1}
+    assert metrics["hard_octave_solved_counts"] == {"2": 0}
+    json.dumps(metrics, allow_nan=False)
+
+
 def test_public_result_never_contains_secrets_paths_residuals_or_tracebacks(
     task_dir: Path, task_module_loader, monkeypatch, tmp_path: Path
 ) -> None:
@@ -647,6 +685,58 @@ def test_cli_reports_infrastructure_failure_without_a_score_or_traceback(
             str(task_dir / "reference.json"),
         ],
         cwd=task_dir,
+        env=env,
+        text=True,
+        capture_output=True,
+        timeout=10,
+        check=False,
+    )
+
+    assert completed.returncode == 1
+    assert completed.stdout == ""
+    assert completed.stderr == "infrastructure_error\n"
+
+
+def test_cli_sanitizes_public_package_import_failure(
+    task_dir: Path, tmp_path: Path
+) -> None:
+    evaluator_path = tmp_path / "evaluator.py"
+    shutil.copyfile(task_dir / "evaluator.py", evaluator_path)
+    env = os.environ.copy()
+    env.pop("PYTHONPATH", None)
+    env.pop("FCS_STRUCTURED_LWE_CATALOG", None)
+    env["FRONTIER_PUBLIC_DIR"] = str(tmp_path / "missing-public")
+
+    completed = subprocess.run(
+        [sys.executable, str(evaluator_path), str(tmp_path / "solution.json")],
+        cwd=tmp_path,
+        env=env,
+        text=True,
+        capture_output=True,
+        timeout=10,
+        check=False,
+    )
+
+    assert completed.returncode == 1
+    assert completed.stdout == ""
+    assert completed.stderr == "infrastructure_error\n"
+
+
+def test_cli_sanitizes_public_directory_resolution_failure(
+    task_dir: Path, tmp_path: Path
+) -> None:
+    evaluator_path = tmp_path / "evaluator.py"
+    shutil.copyfile(task_dir / "evaluator.py", evaluator_path)
+    public_loop = tmp_path / "public-loop"
+    public_loop.symlink_to(public_loop.name)
+    env = os.environ.copy()
+    env.pop("PYTHONPATH", None)
+    env.pop("FCS_STRUCTURED_LWE_CATALOG", None)
+    env["FRONTIER_PUBLIC_DIR"] = str(public_loop)
+
+    completed = subprocess.run(
+        [sys.executable, str(evaluator_path), str(tmp_path / "solution.json")],
+        cwd=tmp_path,
         env=env,
         text=True,
         capture_output=True,

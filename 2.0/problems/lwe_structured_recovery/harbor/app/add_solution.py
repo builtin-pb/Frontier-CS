@@ -4,9 +4,23 @@
 from __future__ import annotations
 
 import argparse
+import sys
+from pathlib import Path
 from typing import NoReturn
 
-import lwe_challenge.ledger as ledger
+
+def _load_ledger_module():
+    public_path = str(Path(__file__).resolve().parent / "public")
+    while public_path in sys.path:
+        sys.path.remove(public_path)
+    sys.path.insert(0, public_path)
+    import lwe_challenge.ledger as ledger_module
+
+    return ledger_module
+
+
+if __name__ != "__main__":
+    ledger = _load_ledger_module()
 
 
 class _SanitizedArgumentParser(argparse.ArgumentParser):
@@ -37,15 +51,12 @@ def main() -> int:
         parser.error("SECRET must be a comma-separated integer vector")
 
     try:
-        with ledger.ledger_lock(args.ledger):
-            current = ledger.load_ledger(args.ledger)
-            updated = ledger.merge_witness(
-                current,
-                instance_id=args.instance_id,
-                secret=secret,
-                replace=args.replace,
-            )
-            ledger.write_ledger_atomic(args.ledger, updated)
+        updated = ledger.merge_witness_transaction(
+            args.ledger,
+            instance_id=args.instance_id,
+            secret=secret,
+            replace=args.replace,
+        )
     except (OSError, TypeError, ValueError):
         parser.exit(2, "error: unable to update ledger\n")
 
@@ -54,4 +65,9 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    try:
+        ledger = _load_ledger_module()
+    except Exception:
+        sys.stderr.write("error: unable to update ledger\n")
+        raise SystemExit(2)
     raise SystemExit(main())

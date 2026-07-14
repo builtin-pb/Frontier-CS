@@ -262,6 +262,24 @@ sampled nonzero coefficients are units. A composite modulus in any other
 family requires a complete prime-power factor audit in that instance's
 reduction artifact.
 
+The Phase 2 `sum(n*m)` cap does not by itself bound the coupon-collector draws
+used to sample sparse supports.  Define the exact expected draw count with
+`fractions.Fraction` as
+`m * n * sum(Fraction(1, j) for j in range(n-row_weight+1, n+1))` and take its
+integer ceiling.  A sparse candidate is analytically admissible only when that
+ceiling is at most `4 * n * m`; this fixed four-times entry cap rejects
+near-saturated support choices instead of treating the dense-entry cap as
+sufficient evidence.  Every generation receipt must also carry the exact
+public-work benchmark fields specified in Task 3B, with the analytic draw
+field marked not applicable for dense matrices.  Candidate, family, and full
+release audits recompute the ceiling, enforce the four-times cap, verify the
+benchmark against the reference-hardware digest, and require the sum of all
+200 per-instance materializer-plus-verifier p95 times to use at most one
+quarter of `config.yaml:runtime.timeout_seconds` (four-times evaluator
+headroom).  Tests include values immediately below/above the analytic cap and
+a near-saturated rejection, as well as aggregate benchmark totals immediately
+below/above the runtime headroom boundary.
+
 Require `record.error_distribution.kind == slot.required_error_kind`. Enforce
 the Phase 2 field semantics exactly: truncated Gaussian has `sigma > 0`,
 `eta is None`, positive `bound`, and no `weight`; centered binomial has
@@ -657,6 +675,33 @@ reviews, and manifest entry to match current bytes. Recompute every
 `artifact_sha256` independently; reject missing, extra, duplicate, absolute,
 escaping, symlinked, or untracked paths.
 
+Validate the generation receipt's exact `public_work` object as part of the
+same per-instance path in every scope. Every record requires exactly
+`analytic_status`, `entry_count`, `expected_support_draws_ceiling`,
+`benchmark_trials`, `materialize_trial_nanoseconds`,
+`verify_trial_nanoseconds`, `materialize_p95_nanoseconds`,
+`verify_p95_nanoseconds`, and `hardware_sha256`; all scalar numeric fields are
+non-boolean integers, `entry_count`, `materialize_p95_nanoseconds`, and
+`verify_p95_nanoseconds` are positive, `5 <= benchmark_trials <= 31`, and the
+hardware digest equals current `calibration/hardware.json`. The two trial
+fields are arrays of exactly `benchmark_trials` positive non-boolean integers,
+each no greater than the configured evaluator timeout in nanoseconds. Recompute
+each recorded p95 with nearest-rank index
+`ceil(0.95 * benchmark_trials) - 1`; a receipt cannot self-report a lower
+summary than its bound raw trials. A non-sparse record
+requires `analytic_status="not_applicable"` and a JSON-null draw ceiling. A
+sparse record requires `analytic_status="accepted"`, the independently
+recomputed positive integer ceiling, and
+`expected_support_draws_ceiling <= 4 * entry_count`.  Recompute `entry_count`
+for both kinds and reject a missing, extra, stale, or kind-inconsistent work
+receipt.  Candidate audit evaluates the prospective candidate together with
+current admitted receipt timings and rejects once that partial sum exceeds the
+same final cap; family/full audit evaluates the corresponding admitted set,
+and full audit requires the complete 200-record p95 sum to be at most one
+quarter of the configured evaluator timeout in nanoseconds.  The
+scope-equivalence tests must prove the same per-instance work mutation yields
+the same error in candidate, family, and full modes.
+
 Each canonical `calibration/instance_manifests/<id>.json` contains
 `schema_version`, `instance_id`, `instance_digest`, and these exact bindings:
 
@@ -827,6 +872,10 @@ entropy provider, generate one tiny record into `tmp_path` and assert:
   submitted secret vector, planted error vector, private seed/attestation,
   private hash, answer hash, or witness (the required public `secret`,
   `error`, and distribution predicate objects remain allowed); and
+- the receipt has the exact non-sparse or sparse `public_work` shape specified
+  below, with an independently recomputed rational ceiling, reference-hardware
+  digest, nearest-rank p95 values from at least five injected benchmark trials,
+  and no private-witness timing; and
 - the checker emits a public-safe uniqueness result and neither process retains
   the ephemeral private attestation after the independent check.
 
@@ -863,11 +912,55 @@ Only after every private-pipe check succeeds, atomically write
 `<staging-dir>/generated.jsonl`, `<staging-dir>/generation-receipt.json`, and
 `<staging-dir>/uniqueness.json`. The receipt contains exactly schema version,
 instance ID/digest, generator revision, UTC time, named boolean checks, checker
-revision, and
-`private_material_disposition: "destroyed_after_pipe_crosscheck"`. It has no
-record/output hash or private summary statistic. The CLI never accepts a seed
-in production, never appends to `catalog.jsonl`, never prints private material,
-and exits nonzero without leaving any of the three files if a check fails.
+revision, `public_work`, and
+`private_material_disposition: "destroyed_after_pipe_crosscheck"`.
+`public_work` has the same exact fields for every matrix kind:
+
+```json
+{
+  "analytic_status": "accepted",
+  "entry_count": 0,
+  "expected_support_draws_ceiling": 0,
+  "benchmark_trials": 5,
+  "materialize_trial_nanoseconds": [0, 0, 0, 0, 0],
+  "verify_trial_nanoseconds": [0, 0, 0, 0, 0],
+  "materialize_p95_nanoseconds": 0,
+  "verify_p95_nanoseconds": 0,
+  "hardware_sha256": "64 lowercase hex digits"
+}
+```
+
+The zeroes above are schema placeholders, not permitted production values.
+For every matrix compute `entry_count = n*m`.  For a non-sparse matrix require
+`analytic_status="not_applicable"` and
+`expected_support_draws_ceiling=null`; for a sparse matrix require
+`analytic_status="accepted"`, recompute the exact rational draw ceiling from
+Task 1, and reject unless the ceiling is at most `4 * entry_count`.  Require
+the fixed task-root `calibration/hardware.json` to exist before any production
+generation.  On that declared reference platform run at least five isolated
+trials of the public row materializer and `validate_secret`.  Construct a
+deterministic public predicate-admissible dummy from the published nonzero
+bounds.  For `mod_q`, put `1` in exactly the first `min_nonzero` coordinates
+and zero elsewhere.  For an exact-weight/alphabet predicate that admits zero,
+put its first allowed nonzero value in exactly the first `min_nonzero`
+coordinates and zero elsewhere (all zero is valid when `min_nonzero == 0`).
+If an alphabet excludes zero, first require
+`min_nonzero <= n <= max_nonzero`, then fill every coordinate with its first
+allowed nonzero value.  Reject an empty needed nonzero alphabet or any other
+unsatisfiable public predicate instead of benchmarking an early rejection.
+Assert an instrumented verifier reaches matrix-vector and residual evaluation
+rather than returning at shape/weight validation.
+Record integer p95 nanoseconds using the nearest-rank order statistic and bind
+the exact positive raw trial vectors and hardware-file SHA-256.  Bound the
+trial count to 5 through 31, bound each trial by the evaluator timeout, and
+recompute both p95 fields from those vectors before writing. These are public matrix-work timings, not
+measurements of the private witness.  The receipt has no record/output hash or
+private summary statistic. The CLI never accepts a seed in production, never
+appends to `catalog.jsonl`, never prints private material, and exits nonzero
+without leaving any of the three files if a check or public-work gate fails.
+Although implementation tests precede the reference-platform task in this
+document, production execution of this CLI is forbidden until Task 4 has
+committed `hardware.json`.
 
 Use a short-lived subprocess per production instance. Send one length-bounded
 canonical JSON object containing `public_record`, `private_secret`, and
@@ -908,9 +1001,17 @@ Independently inject a digest mismatch, failed planted-witness verdict,
 support-check failure, native/Python materializer disagreement, alternate
 witness found, checker crash/timeout/malformed stdout, oversized pipe input,
 attempted seed argument, tracked/existing destination, and interrupted atomic
-write. Each case must leave no generated record, receipt, or uniqueness file.
-Run leak-audit assertions over every success/failure artifact and inspect
-captured stdout/stderr for planted coordinates.
+write.  Also inject missing/stale reference hardware, fewer than five trials,
+more than 31 trials, mismatched/raw-vector lengths, zero/negative/over-timeout
+timings, a forged p95 inconsistent with its raw vector, an off-by-one expected-draw ceiling, values
+immediately below and above `4*n*m`, a near-saturated row weight, and an
+exact-weight sparse dummy that fails to reach matvec. Add positive and negative
+dummy-construction cases for exact-weight, iid-alphabet, centered-binomial,
+zero-free alphabet, and `mod_q` predicates at `min_nonzero == 0`, positive
+minimum, and incompatible bounds. Each failure must leave no generated record,
+receipt, or uniqueness file. Run leak-audit assertions over every
+success/failure artifact and inspect captured stdout/stderr for planted
+coordinates.
 
 - [ ] **Step 5: Implement immutable staging and atomic admission**
 
@@ -933,10 +1034,11 @@ Task 3. It resolves every planned canonical path against `task_root`, binds the
 exact staged bytes that admission will publish, and rejects a missing,
 unreferenced, or extra artifact.
 
-`admit_candidate` first invokes the shared `audit_scope(...,
-scope_kind="candidate")` against an overlay containing the candidate and all
-current canonical artifacts. Under one
-admission lock it prepares the final sorted catalog, merged review log,
+`admit_candidate` first acquires the one admission lock, then reloads all
+current canonical artifacts and invokes the shared `audit_scope(...,
+scope_kind="candidate")` under that lock against an overlay containing the
+candidate.  It keeps the same lock while it prepares the final sorted catalog,
+merged review log,
 `admitted` work event (binding the per-instance manifest), canonical artifact
 copies, and catalog sidecar; only then does it compute the top-level manifest
 against those final bytes. A write-ahead journal, same-filesystem temporary
@@ -945,7 +1047,17 @@ single logical transaction. On any exception or injected interruption,
 catalog, reviews, work events, per-instance manifests, and top-level manifest
 retain their old logical state. Tests reject direct append, immutable-field edits, stale
 linkage, duplicate IDs, partial copies, admission before both reviews, and a
-manifest/catalog split-brain after injected replacement failure.
+manifest/catalog split-brain after injected replacement failure. Table-driven
+staging/audit tests also mutate each `public_work` field, distinguish dense
+null-ceiling from sparse accepted-ceiling receipts, reject a stale hardware
+digest or too few trials, and exercise projected aggregate p95 totals one
+nanosecond below, at, and one nanosecond above one quarter of the configured
+evaluator timeout. Candidate admission rejects an over-cap partial total;
+family and full scope cannot bypass the same calculation. A deterministic
+two-candidate race test pauses both callers before the lock: each candidate
+fits beneath the cap against the initial state, but their combined projected
+total exceeds it. Exactly one admission may commit; the second must reload and
+fail its under-lock candidate audit without changing any release artifact.
 
 Provide matching `validate`, `finalize`, `manifest`, and `admit` CLI
 subcommands. Every

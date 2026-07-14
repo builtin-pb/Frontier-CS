@@ -6,6 +6,7 @@ import fcntl
 import json
 import os
 import re
+import secrets
 import stat
 import tempfile
 from collections.abc import Iterator
@@ -15,13 +16,19 @@ from pathlib import Path
 from types import MappingProxyType
 from typing import Mapping, Sequence
 
+from .submission import (
+    MAX_SECRET_ABS,
+    MAX_SUBMISSION_BYTES,
+    MAX_SUBMISSION_NODES,
+    MAX_SUBMISSION_RECORDS,
+    MAX_SUBMISSION_SECRET_COMPONENTS,
+)
 from .strict_json import loads_object
 
 
-MAX_LEDGER_RECORDS = 200
-MAX_LEDGER_BYTES = 2_000_000
-MAX_LEDGER_NODES = 1_000_005
-MAX_SECRET_ABS = 2**63 - 1
+MAX_LEDGER_RECORDS = MAX_SUBMISSION_RECORDS
+MAX_LEDGER_BYTES = MAX_SUBMISSION_BYTES
+MAX_LEDGER_NODES = MAX_SUBMISSION_NODES
 _INSTANCE_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,63}\Z")
 
 
@@ -47,21 +54,20 @@ class Ledger:
 
 
 @contextmanager
-def ledger_lock(path: str | Path) -> Iterator[None]:
-    """Hold the stable sibling lock for a complete ledger transaction."""
+def _ledger_lock_at(parent_fd: int, ledger_name: str) -> Iterator[None]:
+    """Hold the sibling lock relative to an already pinned parent."""
 
-    ledger_path = Path(path)
-    lock_path = ledger_path.with_name(f"{ledger_path.name}.lock")
     if not hasattr(os, "O_NOFOLLOW"):
         raise OSError("platform cannot safely open the ledger lock")
     descriptor = os.open(
-        lock_path,
+        f"{ledger_name}.lock",
         os.O_RDWR
         | os.O_CREAT
         | os.O_NOFOLLOW
         | getattr(os, "O_CLOEXEC", 0)
         | getattr(os, "O_NONBLOCK", 0),
         0o600,
+        dir_fd=parent_fd,
     )
     locked = False
     try:
@@ -79,6 +85,19 @@ def ledger_lock(path: str | Path) -> Iterator[None]:
             os.close(descriptor)
 
 
+@contextmanager
+def ledger_lock(path: str | Path) -> Iterator[None]:
+    """Hold the stable sibling lock for a complete ledger transaction."""
+
+    ledger_path = Path(path)
+    parent_fd = _open_parent_directory(ledger_path)
+    try:
+        with _ledger_lock_at(parent_fd, ledger_path.name):
+            yield
+    finally:
+        os.close(parent_fd)
+
+
 def _validate_instance_id(instance_id: object) -> str:
     if (
         not isinstance(instance_id, str)
@@ -93,7 +112,7 @@ def _normalize_secret(secret: Sequence[int]) -> tuple[int, ...]:
         candidate = tuple(secret)
     except TypeError as exc:
         raise ValueError("invalid secret") from exc
-    if any(
+    if len(candidate) > MAX_SUBMISSION_SECRET_COMPONENTS or any(
         type(value) is not int or abs(value) > MAX_SECRET_ABS
         for value in candidate
     ):
@@ -110,6 +129,26 @@ def _open_regular_readonly(path: Path) -> int:
         | os.O_NOFOLLOW
         | getattr(os, "O_CLOEXEC", 0)
         | getattr(os, "O_NONBLOCK", 0),
+    )
+    try:
+        if not stat.S_ISREG(os.fstat(descriptor).st_mode):
+            raise LedgerContractError("ledger must be a regular file")
+    except BaseException:
+        os.close(descriptor)
+        raise
+    return descriptor
+
+
+def _open_regular_readonly_at(parent_fd: int, name: str) -> int:
+    if not hasattr(os, "O_NOFOLLOW"):
+        raise OSError("platform cannot safely open a ledger")
+    descriptor = os.open(
+        name,
+        os.O_RDONLY
+        | os.O_NOFOLLOW
+        | getattr(os, "O_CLOEXEC", 0)
+        | getattr(os, "O_NONBLOCK", 0),
+        dir_fd=parent_fd,
     )
     try:
         if not stat.S_ISREG(os.fstat(descriptor).st_mode):
@@ -140,9 +179,7 @@ def _open_parent_directory(path: Path) -> int:
     return descriptor
 
 
-def load_ledger(path: str | Path) -> Ledger:
-    ledger_path = Path(path)
-    descriptor = _open_regular_readonly(ledger_path)
+def _load_ledger_descriptor(descriptor: int) -> Ledger:
     with os.fdopen(descriptor, "rb") as handle:
         data = handle.read(MAX_LEDGER_BYTES + 1)
     document = loads_object(
@@ -188,6 +225,14 @@ def load_ledger(path: str | Path) -> Ledger:
     return Ledger(schema_version=1, solutions=solutions)
 
 
+def _load_ledger_at(parent_fd: int, name: str) -> Ledger:
+    return _load_ledger_descriptor(_open_regular_readonly_at(parent_fd, name))
+
+
+def load_ledger(path: str | Path) -> Ledger:
+    return _load_ledger_descriptor(_open_regular_readonly(Path(path)))
+
+
 def _canonical_bytes(ledger: Ledger) -> bytes:
     if type(ledger.schema_version) is not int or ledger.schema_version != 1:
         raise LedgerContractError("ledger schema_version must be integer 1")
@@ -224,68 +269,27 @@ def _canonical_bytes(ledger: Ledger) -> bytes:
     return encoded
 
 
-def _restore_foreign_temp(
-    quarantine_fd: int, temporary_path: str
-) -> None:
-    """Restore without replacing a path that appeared during quarantine.
-
-    Hard-link creation fails when ``temporary_path`` has been reoccupied. The
-    source lookup stays relative to the traversal-isolated inner directory.
-    The quarantine link is deliberately retained even after restoration: if
-    the exposed link disappears concurrently, the foreign inode must remain
-    reachable as durable preservation evidence.
-    """
-
-    try:
-        os.link(
-            "entry",
-            temporary_path,
-            src_dir_fd=quarantine_fd,
-            follow_symlinks=False,
-        )
-    except OSError:
-        return
-
-
-def _restore_foreign_directory(
-    quarantine: "_Quarantine", temporary_path: str
-) -> None:
-    """Expose a no-clobber symlink while retaining the directory in quarantine."""
-
-    quarantined_path = quarantine.directory / "private" / "entry"
-    target = os.path.relpath(
-        quarantined_path,
-        start=Path(temporary_path).parent,
-    )
-    try:
-        os.symlink(target, temporary_path)
-    except OSError:
-        return
-
-
 @dataclass(slots=True)
 class _Quarantine:
     directory: Path
+    name: str
+    parent_fd: int
     outer_fd: int
     inner_fd: int
     traversal_available: bool = True
 
 
-def _prepare_quarantine(destination: Path, parent_fd: int) -> _Quarantine:
-    """Create and open the private cleanup namespace before any temp file."""
-
+def _open_prepared_quarantine(
+    destination: Path,
+    parent_fd: int,
+    name: str,
+) -> _Quarantine:
     required_flags = ("O_DIRECTORY", "O_NOFOLLOW")
     if any(not hasattr(os, name) for name in required_flags):
         raise OSError("platform cannot safely prepare ledger cleanup")
-    quarantine_directory = Path(
-        tempfile.mkdtemp(
-            prefix=f".{destination.name}.quarantine.",
-            dir=destination.parent,
-        )
-    )
+    quarantine_directory = destination.parent / name
     outer_fd: int | None = None
     inner_fd: int | None = None
-    prepared = False
     try:
         directory_flags = (
             os.O_RDONLY
@@ -294,7 +298,7 @@ def _prepare_quarantine(destination: Path, parent_fd: int) -> _Quarantine:
             | getattr(os, "O_CLOEXEC", 0)
         )
         outer_fd = os.open(
-            quarantine_directory.name,
+            name,
             directory_flags,
             dir_fd=parent_fd,
         )
@@ -314,14 +318,15 @@ def _prepare_quarantine(destination: Path, parent_fd: int) -> _Quarantine:
             raise OSError("ledger quarantine inner directory is not private")
         quarantine = _Quarantine(
             directory=quarantine_directory,
+            name=name,
+            parent_fd=parent_fd,
             outer_fd=outer_fd,
             inner_fd=inner_fd,
         )
         outer_fd = None
         inner_fd = None
-        prepared = True
         return quarantine
-    finally:
+    except BaseException:
         if inner_fd is not None:
             try:
                 os.close(inner_fd)
@@ -329,18 +334,50 @@ def _prepare_quarantine(destination: Path, parent_fd: int) -> _Quarantine:
                 pass
         if outer_fd is not None:
             try:
+                os.rmdir("private", dir_fd=outer_fd)
+            except OSError:
+                pass
+            try:
                 os.close(outer_fd)
             except OSError:
                 pass
-        if not prepared:
-            try:
-                os.rmdir(quarantine_directory / "private")
-            except OSError:
-                pass
-            try:
-                os.rmdir(quarantine_directory)
-            except OSError:
-                pass
+        try:
+            os.rmdir(name, dir_fd=parent_fd)
+        except OSError:
+            pass
+        raise
+
+
+def _prepare_quarantine(destination: Path, parent_fd: int) -> _Quarantine:
+    """Create the standalone writer's private cleanup namespace."""
+
+    quarantine_directory = Path(
+        tempfile.mkdtemp(
+            prefix=f".{destination.name}.quarantine.",
+            dir=destination.parent,
+        )
+    )
+    return _open_prepared_quarantine(
+        destination,
+        parent_fd,
+        quarantine_directory.name,
+    )
+
+
+def _prepare_quarantine_at(
+    destination: Path, parent_fd: int
+) -> _Quarantine:
+    """Create the transaction cleanup namespace without resolving its parent."""
+
+    prefix = f".{destination.name}.quarantine."
+    for _attempt in range(128):
+        name = f"{prefix}{secrets.token_hex(12)}"
+        try:
+            os.mkdir(name, mode=0o700, dir_fd=parent_fd)
+        except FileExistsError:
+            continue
+        return _open_prepared_quarantine(destination, parent_fd, name)
+    raise FileExistsError("unable to allocate ledger quarantine")
 
 
 def _close_quarantine(quarantine: _Quarantine) -> None:
@@ -354,37 +391,37 @@ def _close_quarantine(quarantine: _Quarantine) -> None:
         os.close(quarantine.inner_fd)
     except OSError:
         pass
+    private_removed = False
+    if quarantine.traversal_available:
+        try:
+            os.rmdir("private", dir_fd=quarantine.outer_fd)
+        except OSError:
+            pass
+        else:
+            private_removed = True
     try:
         os.close(quarantine.outer_fd)
     except OSError:
         pass
-    if quarantine.traversal_available:
+    if private_removed:
         try:
-            os.rmdir(quarantine.directory / "private")
-        except OSError:
-            pass
-        try:
-            os.rmdir(quarantine.directory)
+            os.rmdir(quarantine.name, dir_fd=quarantine.parent_fd)
         except OSError:
             pass
 
 
 def _quarantine_owned_temp(
     quarantine: _Quarantine,
-    temporary_path: str,
     identity: tuple[int, int] | None,
 ) -> None:
-    """Remove only the created inode after atomically isolating the path entry.
+    """Remove only the writer-owned inode from the private namespace.
 
-    ``mkdtemp`` supplies a unique mode-0700 sibling outer directory containing
-    another mode-0700 directory held open by descriptor. A same-filesystem POSIX
-    rename moves the exposed path entry into the inner directory atomically. The
-    outer directory is then chmodded to mode 000, revoking pathname traversal,
-    while descriptor-relative operations on the still-permitted inner directory
-    remain usable. The moved entry is opened with ``O_NOFOLLOW`` and checked via
-    ``fstat``; only that matching regular inode is unlinked through the inner
-    directory descriptor. A foreign regular inode is restored with a no-clobber
-    hard link when possible, while its quarantine link is always retained.
+    The temporary entry is created directly inside the descriptor-held inner
+    directory. Pathname traversal through its outer directory is revoked before
+    the entry is inspected or written. Cleanup opens the entry with
+    ``O_NOFOLLOW`` and compares its descriptor identity before unlinking it
+    relative to the inner directory descriptor. Any missing, unverifiable, or
+    foreign entry is retained in the quarantine for recovery.
 
     This portable boundary excludes a process that already holds the freshly
     created inner directory descriptor or can change quarantine permissions.
@@ -392,33 +429,16 @@ def _quarantine_owned_temp(
     without relying on platform-specific conditional-unlink operations.
     """
 
-    try:
-        os.rename(temporary_path, "entry", dst_dir_fd=quarantine.inner_fd)
-    except OSError:
-        return
     if identity is None:
         return
     entry_fd: int | None = None
     try:
-        try:
-            os.fchmod(quarantine.outer_fd, 0)
-        except OSError:
-            return
-        quarantine.traversal_available = False
-        try:
-            entry_metadata = os.stat(
-                "entry",
-                dir_fd=quarantine.inner_fd,
-                follow_symlinks=False,
-            )
-        except OSError:
-            return
-        if stat.S_ISDIR(entry_metadata.st_mode):
-            _restore_foreign_directory(quarantine, temporary_path)
-            return
-        if not stat.S_ISREG(entry_metadata.st_mode):
-            _restore_foreign_temp(quarantine.inner_fd, temporary_path)
-            return
+        if quarantine.traversal_available:
+            try:
+                os.fchmod(quarantine.outer_fd, 0)
+            except OSError:
+                return
+            quarantine.traversal_available = False
         try:
             entry_flags = (
                 os.O_RDONLY
@@ -440,8 +460,6 @@ def _quarantine_owned_temp(
                 os.unlink("entry", dir_fd=quarantine.inner_fd)
             except OSError:
                 return
-        elif stat.S_ISREG(quarantined.st_mode):
-            _restore_foreign_temp(quarantine.inner_fd, temporary_path)
     finally:
         if entry_fd is not None:
             try:
@@ -450,31 +468,93 @@ def _quarantine_owned_temp(
                 pass
 
 
-def write_ledger_atomic(path: str | Path, ledger: Ledger) -> None:
-    destination = Path(path)
-    data = _canonical_bytes(ledger)
+def _verify_owned_temp(
+    quarantine: _Quarantine, identity: tuple[int, int]
+) -> int:
+    """Open and pin the verified private source through replacement."""
+
+    entry_flags = (
+        os.O_RDONLY
+        | os.O_NOFOLLOW
+        | getattr(os, "O_CLOEXEC", 0)
+        | getattr(os, "O_NONBLOCK", 0)
+    )
+    entry_fd = os.open("entry", entry_flags, dir_fd=quarantine.inner_fd)
     try:
-        destination_fd = _open_regular_readonly(destination)
-    except FileNotFoundError:
-        pass
-    else:
-        os.close(destination_fd)
-    parent_fd = _open_parent_directory(destination)
+        metadata = os.fstat(entry_fd)
+        if (
+            not stat.S_ISREG(metadata.st_mode)
+            or (metadata.st_dev, metadata.st_ino) != identity
+        ):
+            raise OSError("ledger temporary file identity changed")
+    except BaseException:
+        try:
+            os.close(entry_fd)
+        except OSError:
+            pass
+        raise
+    return entry_fd
+
+
+def _write_ledger_bytes_at(
+    destination: Path,
+    parent_fd: int,
+    data: bytes,
+    *,
+    descriptor_quarantine: bool,
+) -> None:
     quarantine: _Quarantine | None = None
-    temporary_path: str | None = None
+    temporary_name: str | None = None
     temporary_fd: int | None = None
+    writer_fd: int | None = None
+    verified_fd: int | None = None
     temporary_identity: tuple[int, int] | None = None
     try:
-        quarantine = _prepare_quarantine(destination, parent_fd)
-        temporary_fd, temporary_path = tempfile.mkstemp(
-            prefix=f".{destination.name}.",
-            suffix=".tmp",
-            dir=destination.parent,
+        try:
+            destination_fd = os.open(
+                destination.name,
+                os.O_RDONLY
+                | os.O_NOFOLLOW
+                | getattr(os, "O_CLOEXEC", 0)
+                | getattr(os, "O_NONBLOCK", 0),
+                dir_fd=parent_fd,
+            )
+        except FileNotFoundError:
+            pass
+        else:
+            try:
+                if not stat.S_ISREG(os.fstat(destination_fd).st_mode):
+                    raise LedgerContractError(
+                        "ledger must be a regular file"
+                    )
+            finally:
+                os.close(destination_fd)
+        prepare_quarantine = (
+            _prepare_quarantine_at
+            if descriptor_quarantine
+            else _prepare_quarantine
         )
+        quarantine = prepare_quarantine(destination, parent_fd)
+        os.fchmod(quarantine.outer_fd, 0)
+        quarantine.traversal_available = False
+        temporary_fd = os.open(
+            "entry",
+            os.O_WRONLY
+            | os.O_CREAT
+            | os.O_EXCL
+            | os.O_NOFOLLOW
+            | getattr(os, "O_CLOEXEC", 0),
+            0o600,
+            dir_fd=quarantine.inner_fd,
+        )
+        temporary_name = "entry"
         created = os.fstat(temporary_fd)
+        if not stat.S_ISREG(created.st_mode):
+            raise OSError("ledger temporary file is not regular")
         temporary_identity = (created.st_dev, created.st_ino)
-        with os.fdopen(temporary_fd, "wb") as handle:
-            temporary_fd = None
+        writer_fd = os.dup(temporary_fd)
+        with os.fdopen(writer_fd, "wb") as handle:
+            writer_fd = None
             data_view = memoryview(data)
             offset = 0
             while offset < len(data_view):
@@ -489,25 +569,65 @@ def write_ledger_atomic(path: str | Path, ledger: Ledger) -> None:
                 offset += written
             handle.flush()
             os.fsync(handle.fileno())
-        os.replace(temporary_path, destination)
-        temporary_path = None
+        verified_fd = _verify_owned_temp(quarantine, temporary_identity)
+        os.replace(
+            temporary_name,
+            destination.name,
+            src_dir_fd=quarantine.inner_fd,
+            dst_dir_fd=parent_fd,
+        )
+        temporary_name = None
         os.fsync(parent_fd)
     except BaseException:
+        if writer_fd is not None:
+            try:
+                os.close(writer_fd)
+            except OSError:
+                pass
+        if temporary_name is not None and quarantine is not None:
+            _quarantine_owned_temp(
+                quarantine,
+                temporary_identity,
+            )
+        raise
+    finally:
+        if verified_fd is not None:
+            try:
+                os.close(verified_fd)
+            except OSError:
+                pass
         if temporary_fd is not None:
             try:
                 os.close(temporary_fd)
             except OSError:
                 pass
-        if temporary_path is not None and quarantine is not None:
-            _quarantine_owned_temp(
-                quarantine,
-                temporary_path,
-                temporary_identity,
-            )
-        raise
-    finally:
         if quarantine is not None:
             _close_quarantine(quarantine)
+
+
+def _write_ledger_atomic_at(
+    destination: Path, parent_fd: int, ledger: Ledger
+) -> None:
+    _write_ledger_bytes_at(
+        destination,
+        parent_fd,
+        _canonical_bytes(ledger),
+        descriptor_quarantine=True,
+    )
+
+
+def write_ledger_atomic(path: str | Path, ledger: Ledger) -> None:
+    destination = Path(path)
+    data = _canonical_bytes(ledger)
+    parent_fd = _open_parent_directory(destination)
+    try:
+        _write_ledger_bytes_at(
+            destination,
+            parent_fd,
+            data,
+            descriptor_quarantine=False,
+        )
+    finally:
         try:
             os.close(parent_fd)
         except OSError:
@@ -535,3 +655,32 @@ def merge_witness(
     solutions = dict(ledger.solutions)
     solutions[instance_id] = candidate
     return Ledger(schema_version=ledger.schema_version, solutions=solutions)
+
+
+def merge_witness_transaction(
+    path: str | Path,
+    *,
+    instance_id: str,
+    secret: Sequence[int],
+    replace: bool = False,
+) -> Ledger:
+    """Merge and persist while pinning one parent namespace throughout."""
+
+    destination = Path(path)
+    parent_fd = _open_parent_directory(destination)
+    try:
+        with _ledger_lock_at(parent_fd, destination.name):
+            current = _load_ledger_at(parent_fd, destination.name)
+            updated = merge_witness(
+                current,
+                instance_id=instance_id,
+                secret=secret,
+                replace=replace,
+            )
+            _write_ledger_atomic_at(destination, parent_fd, updated)
+            return updated
+    finally:
+        try:
+            os.close(parent_fd)
+        except OSError:
+            pass

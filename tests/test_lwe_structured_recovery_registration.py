@@ -45,6 +45,11 @@ def test_lwe_structured_recovery_readme_publishes_complete_agent_contract() -> N
         "score_unbounded = solved_count",
         "python3 /app/add_solution.py",
         "2,000,000 bytes",
+        "at most 4 levels of JSON nesting",
+        "820,205 decoded nodes",
+        "a nested secret such as `[[0]]` is rejected before per-record validation",
+        "zero even when another record is valid",
+        "length is at most 4,096",
         "production catalog contains exactly 200 instances",
         "canonical empty ledger is pre-provisioned at /app/solution.json",
         "identical existing witness is an idempotent no-op",
@@ -53,6 +58,7 @@ def test_lwe_structured_recovery_readme_publishes_complete_agent_contract() -> N
         "safe means syntactically valid under the instance-ID regex",
         "duplicate_count counts distinct syntactically valid IDs",
         "conflict_count counts distinct IDs",
+        "within the ledger integer bound and at most 4,096 components",
         "syntactically valid but unknown instance_id is a per-record",
         "unknown_instance_id",
         "does not invalidate the whole ledger",
@@ -106,7 +112,9 @@ def test_lwe_structured_recovery_readme_publishes_complete_agent_contract() -> N
         "prints a submission UUID",
         "bash /app/wait_submission.sh SUBMISSION_UUID",
         "bash /app/submissions.sh",
-        "only the wait result carries the full score, message, and metrics",
+        "`wait_submission.sh` prints the completed score, message, and metrics",
+        "Add `--json` to either wait or list",
+        "complete structured submission record",
     )
     missing = [
         fragment for fragment in required_fragments if fragment not in readme

@@ -16,18 +16,28 @@ from typing import TypeAlias
 JsonScalar: TypeAlias = None | bool | int | float | str
 PlainData: TypeAlias = JsonScalar | list["PlainData"] | dict[str, "PlainData"]
 
-_SOURCE_PUBLIC_DIR = Path(__file__).resolve().parent / "harbor" / "app" / "public"
-_INITIAL_CATALOG_OVERRIDE = os.environ.get("FCS_STRUCTURED_LWE_CATALOG")
-_IMPORT_PUBLIC_DIR = Path(
-    _SOURCE_PUBLIC_DIR
-    if _INITIAL_CATALOG_OVERRIDE is not None
-    else os.environ.get("FRONTIER_PUBLIC_DIR", _SOURCE_PUBLIC_DIR)
-).resolve()
-if str(_IMPORT_PUBLIC_DIR) not in sys.path:
-    sys.path.insert(0, str(_IMPORT_PUBLIC_DIR))
+try:
+    _SOURCE_PUBLIC_DIR = (
+        Path(__file__).resolve().parent / "harbor" / "app" / "public"
+    )
+    _INITIAL_CATALOG_OVERRIDE = os.environ.get("FCS_STRUCTURED_LWE_CATALOG")
+    _IMPORT_PUBLIC_DIR = Path(
+        _SOURCE_PUBLIC_DIR
+        if _INITIAL_CATALOG_OVERRIDE is not None
+        else os.environ.get("FRONTIER_PUBLIC_DIR", _SOURCE_PUBLIC_DIR)
+    ).resolve()
+    _IMPORT_PUBLIC_DIR_TEXT = str(_IMPORT_PUBLIC_DIR)
+    while _IMPORT_PUBLIC_DIR_TEXT in sys.path:
+        sys.path.remove(_IMPORT_PUBLIC_DIR_TEXT)
+    sys.path.insert(0, _IMPORT_PUBLIC_DIR_TEXT)
 
-from lwe_challenge.evaluator_core import evaluate_path  # noqa: E402
-from lwe_challenge.schema import MAX_CATALOG_BYTES, Catalog  # noqa: E402
+    from lwe_challenge.evaluator_core import evaluate_path  # noqa: E402
+    from lwe_challenge.schema import MAX_CATALOG_BYTES, Catalog  # noqa: E402
+except Exception:
+    if __name__ == "__main__":
+        print("infrastructure_error", file=sys.stderr)
+        raise SystemExit(1) from None
+    raise
 
 
 _SIDECAR_BYTES = len(f"{'0' * 64}  catalog.jsonl\n".encode("ascii"))

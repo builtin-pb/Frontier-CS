@@ -27,6 +27,10 @@ from .strict_json import JsonContractError, loads_object
 
 MAX_SUBMISSION_BYTES = 2_000_000
 MAX_SUBMISSION_RECORDS = 200
+MAX_SUBMISSION_SECRET_COMPONENTS = MAX_N
+MAX_SUBMISSION_NODES = 5 + MAX_SUBMISSION_RECORDS * (
+    MAX_SUBMISSION_SECRET_COMPONENTS + 5
+)
 MAX_SECRET_ABS = 2**63 - 1
 _INSTANCE_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,63}\Z")
 
@@ -80,7 +84,10 @@ def parse_submission(
             data,
             max_bytes=byte_limit,
             max_depth=4,
-            max_nodes=5 + record_limit * (MAX_N + 5),
+            max_nodes=(
+                5
+                + record_limit * (MAX_SUBMISSION_SECRET_COMPONENTS + 5)
+            ),
         )
     except JsonContractError:
         pass
@@ -134,9 +141,13 @@ def parse_submission(
             unknown_ids.add(instance_id)
         fields_are_exact = set(raw_record) == {"instance_id", "secret"}
         raw_secret = raw_record.get("secret")
-        secret_is_valid = isinstance(raw_secret, list) and not any(
-            type(value) is not int or abs(value) > MAX_SECRET_ABS
-            for value in raw_secret
+        secret_is_valid = (
+            isinstance(raw_secret, list)
+            and len(raw_secret) <= MAX_SUBMISSION_SECRET_COMPONENTS
+            and not any(
+                type(value) is not int or abs(value) > MAX_SECRET_ABS
+                for value in raw_secret
+            )
         )
         if secret_is_valid:
             secret = tuple(raw_secret)

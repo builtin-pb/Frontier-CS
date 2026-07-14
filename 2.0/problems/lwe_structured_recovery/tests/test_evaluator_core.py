@@ -326,8 +326,8 @@ def test_metadata_metrics_cover_tiers_families_and_hard_octaves(catalog) -> None
         "SA_Q": 1,
         "SA_SMALL": 0,
     }
-    assert result.metrics["hard_octave_totals"] == {2: 1, 5: 1}
-    assert result.metrics["hard_octave_solved_counts"] == {2: 1, 5: 1}
+    assert result.metrics["hard_octave_totals"] == {"2": 1, "5": 1}
+    assert result.metrics["hard_octave_solved_counts"] == {"2": 1, "5": 1}
     assert result.metrics["hardest_solved_octave"] == 5
 
 

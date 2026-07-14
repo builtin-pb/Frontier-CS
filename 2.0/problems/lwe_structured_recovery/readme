@@ -140,14 +140,19 @@ The whole-file rules require an unambiguous UTF-8 JSON object whose top-level
 fields are exactly `schema_version` and `solutions`, with integer
 `schema_version == 1` and a `solutions` array of at most 200 elements.  No JSON
 object may repeat a key, and the encoded file may contain at most 2,000,000
-bytes.  Therefore, violating a whole-file rule scores zero.
+bytes.  The decoder also permits at most 4 levels of JSON nesting and 820,205
+decoded nodes.  Exceeding either decoder budget is a whole-file
+`invalid_json` error; for example, a nested secret such as `[[0]]` is rejected
+before per-record validation.  Therefore, violating a whole-file rule scores
+zero even when another record is valid.
 
 Records are checked separately.  A canonical record has exactly `instance_id`
 and `secret`; the ID matches `[A-Za-z0-9][A-Za-z0-9._-]{0,63}` and names a
 public instance, while `secret` is an integer array whose components have
-absolute value at most `2^63 - 1`.  A per-record rejection does not invalidate
-the whole ledger; unrelated valid records can still score.  The canonical
-empty ledger is pre-provisioned at /app/solution.json as:
+absolute value at most `2^63 - 1` and whose length is at most 4,096.  A
+per-record rejection does not invalidate the whole ledger; unrelated valid
+records can still score; the canonical empty ledger is pre-provisioned at
+/app/solution.json as:
 
 ```json
 {"schema_version":1,"solutions":[]}
@@ -169,11 +174,12 @@ python3 /app/add_solution.py --replace INSTANCE_ID '0,1,-1'
 ```
 
 A successful add_solution exit and write enforces canonical structural ledger
-rules: exact object fields and version, unique regex-valid IDs, bounded integer
-arrays, and the 200-record and 2,000,000-byte caps.  The helper refuses an
-update that would exceed the 200-record or 2,000,000-byte cap.  Success does
-not prove catalog membership or mathematical witness validity because the
-helper does not load the catalog.  Validate with
+rules: exact object fields and version, unique regex-valid IDs, integer arrays
+of at most 4,096 bounded components, and the 200-record and 2,000,000-byte
+caps.  The helper refuses an update that would exceed the 200-record or
+2,000,000-byte cap, as well as either component bound.
+Success does not prove catalog membership or mathematical witness validity
+because the helper does not load the catalog.  Validate with
 `instance.validate_secret(candidate)` before adding a record.  After every
 successful helper call, the ledger remains cumulative.
 
@@ -186,9 +192,9 @@ syntactically valid IDs that occur more than once, not duplicate occurrences.
 conflict_count counts distinct IDs with more than one distinct syntactically
 valid integer vector, not conflicting pairs or occurrences.  Here a
 syntactically valid integer vector is a JSON array of non-boolean integers
-within the ledger integer bound; it need not have the right dimension or pass
-the mathematical witness predicates.  Every rejected occurrence contributes
-to `invalid_count`.
+within the ledger integer bound and at most 4,096 components; it need not have
+the right dimension or pass the mathematical witness predicates.  Every
+rejected occurrence contributes to `invalid_count`.
 
 unknown_count counts distinct regex-valid IDs absent from the catalog, even
 when an ID is repeated or another field in its record is malformed.  This set
@@ -252,11 +258,13 @@ List submissions when you need to recover an ID or inspect status:
 bash /app/submissions.sh
 ```
 
-The submit command does not return evaluator feedback.  The list command gives
-a status and score summary; only the wait result carries the full score,
-message, and metrics.  The adapter allows at most 3 pending submissions.  Use
-each completed public response to guide the next analysis, and submit again
-whenever the cumulative ledger improves.
+The submit command does not return evaluator feedback.  Plain
+`submissions.sh` gives a status and score summary, while `wait_submission.sh`
+prints the completed score, message, and metrics.  Add `--json` to either wait
+or list when you need the complete structured submission record.  The adapter
+allows at most 3 pending submissions.  Use each completed public response to
+guide the next analysis, and submit again whenever the cumulative ledger
+improves.
 
 ## Resource budget
 

@@ -75,7 +75,9 @@ strict_json + schema -> submission
 schema + submission + verification -> evaluator_core
 strict_json + submission -> ledger
 schema + matrix + verification -> generator
-all public modules -> lwe_instance facade -> evaluator.py / add_solution.py
+schema + matrix + verification -> lwe_instance facade
+schema + evaluator_core -> evaluator.py
+ledger -> add_solution.py
 ```
 
 No Phase-3 solver may import `lwe_challenge.*`; it must import only `lwe_instance.py`.
@@ -1384,8 +1386,8 @@ Run without invoking any recovery solver:
 
 ```bash
 PYTHONPATH=2.0/problems/lwe_structured_recovery/harbor/app/public uv run pytest 2.0/problems/lwe_structured_recovery/tests -q
-uv run pytest tests/test_lwe_structured_recovery_registration.py -q
-PYTHONPYCACHEPREFIX=/private/tmp/frontier-cs-pycache python3 -m py_compile 2.0/problems/lwe_structured_recovery/evaluator.py 2.0/problems/lwe_structured_recovery/harbor/app/public/lwe_instance.py
+uv run pytest tests -q
+PYTHONPYCACHEPREFIX=/private/tmp/frontier-cs-pycache uv run python -m py_compile 2.0/problems/lwe_structured_recovery/evaluator.py 2.0/problems/lwe_structured_recovery/harbor/app/public/lwe_instance.py
 ```
 
 Expected: all task-local and root tests pass; compilation exits zero. Do not run a lattice solver or any calibrated attack.
@@ -1394,7 +1396,7 @@ Expected: all task-local and root tests pass; compilation exits zero. Do not run
 
   Observed: The canonical starter and reference ledgers are byte-identical. The authorized synthetic empty-ledger smoke emitted the sanitized public summary and final stdout line `0.000000000000 0.000000000000`; no solver, recovery, calibration, or production generation ran.
 
-Run: `FCS_STRUCTURED_LWE_CATALOG=$PWD/2.0/problems/lwe_structured_recovery/catalog.synthetic.json python3 2.0/problems/lwe_structured_recovery/evaluator.py 2.0/problems/lwe_structured_recovery/reference.json`
+Run: `FCS_STRUCTURED_LWE_CATALOG=$PWD/2.0/problems/lwe_structured_recovery/catalog.synthetic.json uv run python 2.0/problems/lwe_structured_recovery/evaluator.py 2.0/problems/lwe_structured_recovery/reference.json`
 
 Expected final stdout line: `0.000000000000 0.000000000000`.
 
@@ -1407,6 +1409,45 @@ git add 2.0/problems/lwe_structured_recovery/readme 2.0/problems/lwe_structured_
 git commit -m "docs(structured-lwe): document public witness workflow"
 ```
 
+## Integrated remediation and reverification — 2026-07-15
+
+The first four-lens integrated review of the completed Phase 2 branch found
+cross-task failures that the individual slice reviews did not expose.  The
+remediation stringifies hard-octave metric keys at the core boundary, boots the
+packaged helper from its sibling `public` directory without relying on
+`PYTHONPATH`, shares the evaluator's record/byte/node/component budgets with the
+ledger helper, pins atomic replacement to descriptor-held source and parent
+directories, and sanitizes evaluator import failures.  The readme now states
+the whole-file depth/node precedence and complete asynchronous feedback paths.
+The sparse coupon-collector admission risk remains deliberately assigned to
+the explicit Phase 4 production gate below; no sampler protocol changed here.
+
+The fixes were developed with focused RED→GREEN regressions, including a
+schema-valid hard `H2` catalog through the FCS wrapper, packaged-helper startup
+with `PYTHONPATH` removed, maximum-size helper/evaluator compatibility, and
+foreign-inode/race cleanup at the ledger replacement boundary.  The current
+non-solver tree was then checked with:
+
+```bash
+PYTHONPATH=2.0/problems/lwe_structured_recovery/harbor/app/public UV_CACHE_DIR=/private/tmp/frontier-cs-uv-cache uv run pytest 2.0/problems/lwe_structured_recovery/tests tests/test_lwe_structured_recovery_registration.py -q
+UV_CACHE_DIR=/private/tmp/frontier-cs-uv-cache uv run pytest tests -q
+PYTHONPYCACHEPREFIX=/private/tmp/frontier-cs-phase2-pycache UV_CACHE_DIR=/private/tmp/frontier-cs-uv-cache uv run python -m py_compile 2.0/problems/lwe_structured_recovery/evaluator.py 2.0/problems/lwe_structured_recovery/harbor/app/add_solution.py 2.0/problems/lwe_structured_recovery/harbor/app/public/lwe_instance.py
+bash -n 2.0/problems/lwe_structured_recovery/evaluate.sh
+env -u PYTHONPATH UV_CACHE_DIR=/private/tmp/frontier-cs-uv-cache uv run python 2.0/problems/lwe_structured_recovery/harbor/app/add_solution.py --help
+cmp 2.0/problems/lwe_structured_recovery/harbor/app/solution.json 2.0/problems/lwe_structured_recovery/reference.json
+FCS_STRUCTURED_LWE_CATALOG=$PWD/2.0/problems/lwe_structured_recovery/catalog.synthetic.json UV_CACHE_DIR=/private/tmp/frontier-cs-uv-cache uv run python 2.0/problems/lwe_structured_recovery/evaluator.py 2.0/problems/lwe_structured_recovery/reference.json
+git diff --check
+```
+
+Observed: the combined Phase 2 plus registration run passed `389` tests, the
+full root run passed `40` tests with one unrelated
+`google.generativeai` deprecation warning, compilation and Bash syntax passed,
+the helper printed its usage with `PYTHONPATH` absent, the canonical ledgers
+were byte-identical, the authorized synthetic empty-ledger smoke ended with
+`0.000000000000 0.000000000000`, and the diff check was clean.  No solver,
+recovery algorithm, calibration, production corpus, persistent production
+artifact, or network operation ran.
+
 ## Self-review result
 
 - Spec coverage: scaffold, JSON reference, strict catalog, SHAKE matrices, all four matrix structures, public secret/error predicates, any-witness acceptance, duplicate-safe submission semantics, equal scoring, cumulative ledger helper, synthetic generation, public Phase-3 facade, FCS wrapper, agent readme, and task/root tests each map to a task above.
@@ -1418,3 +1459,4 @@ git commit -m "docs(structured-lwe): document public witness workflow"
 - Packaging boundary: this core plan validates local imports. Installing the public package and production catalog into the generated Harbor judge image is deliberately assigned to the later packaging phase; no claim of a Harbor smoke is made here.
 - Placeholder scan: implementation steps specify concrete paths, signatures, behaviors, commands, expected failures, and commits; no unresolved implementation marker remains.
 - Scope check: no production 200-instance catalog, cryptanalytic solver, calibration run, long benchmark, or hidden witness is created or executed in Phase 2.
+- Sparse-work follow-through: the public sparse sampler intentionally preserves its SHAKE protocol, whose coupon-collector draw count is not bounded by `sum(n*m)`. Phase 4 now requires a harmonic expected-draw receipt, materializer/verifier benchmark, and reviewed headroom gate before any sparse production slot is admitted.

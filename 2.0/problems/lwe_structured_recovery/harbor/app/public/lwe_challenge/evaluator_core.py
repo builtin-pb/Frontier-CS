@@ -238,7 +238,7 @@ def _build_metrics(
             family_solved_counts[instance.family] += 1
 
     hard_octave_solved = {
-        octave: hard_octave_solved_counts[octave]
+        str(octave): hard_octave_solved_counts[octave]
         for octave in sorted(hard_octave_totals)
     }
     return MappingProxyType(
@@ -263,7 +263,10 @@ def _build_metrics(
             "hard_solved_count": hard_solved_count,
             "family_solved_counts": MappingProxyType(family_solved_counts),
             "hard_octave_totals": MappingProxyType(
-                dict(sorted(hard_octave_totals.items()))
+                {
+                    str(octave): hard_octave_totals[octave]
+                    for octave in sorted(hard_octave_totals)
+                }
             ),
             "hard_octave_solved_counts": MappingProxyType(hard_octave_solved),
             "hardest_solved_octave": (
