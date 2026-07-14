@@ -1050,7 +1050,9 @@ git commit -m "feat(structured-lwe): add cumulative ledger helper"
 - Create: `2.0/problems/lwe_structured_recovery/tests/test_generator.py`
 - Create: `2.0/problems/lwe_structured_recovery/catalog.synthetic.json`
 
-- [ ] **Step 1: Write the failing non-disclosure test**
+- [x] **Step 1: Write the failing non-disclosure test**
+
+  Observed: Added the structural public-artifact non-disclosure test before the generator module existed and observed the intended missing-module failure.
 
 ```python
 from lwe_challenge.generator import generate_synthetic_instance
@@ -1069,7 +1071,9 @@ def test_public_instance_omits_private_seed_and_witness(toy_template) -> None:
     assert generated.instance.b
 ```
 
-- [ ] **Step 2: Implement injected private entropy and generated artifacts**
+- [x] **Step 2: Implement injected private entropy and generated artifacts**
+
+  Observed: Implemented domain-separated synthetic and production generation for all four secret and four error distributions. Sampling and attestation consume only normalized immutable schema records; private seed, secret, error, and attestation remain in-memory-only and are excluded from repr and public serialization. Review hardening added allocation-free dimension/work preflight, bounded immutable alphabet snapshots, canonical-error bounds, and a fresh fully specified Decimal context for Gaussian tables.
 
 ```python
 @dataclass(frozen=True, slots=True)
@@ -1160,18 +1164,24 @@ only a scrubbed boolean receipt, and relies on process teardown—not a false
 Python zeroization claim—to destroy private state. No answer/secret/error hash
 is computed or retained.
 
-- [ ] **Step 3: Add RED→GREEN tests for deterministic synthetic generation, synthetic/production domain separation with an injected private `_generate` test seam, changed `b` under a different private seed, every secret/error distribution, valid generated witnesses, attestation binding, redacted repr/attestation non-serialization, absence of answer hashes, and public hash stability**
+- [x] **Step 3: Add RED→GREEN tests for deterministic synthetic generation, synthetic/production domain separation with an injected private `_generate` test seam, changed `b` under a different private seed, every secret/error distribution, valid generated witnesses, attestation binding, redacted repr/attestation non-serialization, absence of answer hashes, and public hash stability**
+
+  Observed: Added the planned coverage plus all 16 distribution combinations, ambient-context independence, dishonest-length/index/mutation alphabets, exact/over resource bounds, q-boundary canonical residuals, and raw-error checks for every published predicate plus exact centered-residual equality.
 
 The non-disclosure assertion is structural, not a substring ban: catalog keys
 `secret`, `secret_distribution`, `error`, and `error_distribution` are required
 public predicates/distributions and must remain allowed. Reject only planted,
 submitted, seed, private-entropy, private-attestation, or answer-hash material.
 
-- [ ] **Step 4: Generate the two tiny checked-in synthetic fixtures**
+- [x] **Step 4: Generate the two tiny checked-in synthetic fixtures**
+
+  Observed: Generated exactly two cohort-`synthetic` fixtures with fixed test-only seeds. The public catalog is 3,236 bytes with SHA-256 `6a12049c04f15670a06a95ab11e8faf160ab9d9318ed15c5a81fc6bdfd13b19a`; final review found no private material, and repeated generation preserved both instance digests and `b` vectors.
 
 Use fixed test-only private seeds, inspect the resulting catalog diff, and verify neither seed nor witness is serialized. Write exactly two cohort-`synthetic` entries to `catalog.synthetic.json`.
 
-- [ ] **Step 5: Run and commit**
+- [x] **Step 5: Run and commit**
+
+  Observed: Final focused suite passed (`88 passed`), targeted final spec probes passed (`24 passed`), and the combined Tasks 8–10 check passed (`160 passed`). Independent final specification and quality reviews approved the slice with no Critical or Important findings.
 
 Run: `PYTHONPATH=2.0/problems/lwe_structured_recovery/harbor/app/public uv run pytest 2.0/problems/lwe_structured_recovery/tests/test_generator.py -q`
 

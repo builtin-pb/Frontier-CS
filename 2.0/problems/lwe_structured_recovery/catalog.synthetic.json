@@ -1,0 +1,136 @@
+{
+  "schema_version": 1,
+  "instances": [
+    {
+      "schema_version": 1,
+      "instance_id": "toy-uniform",
+      "n": 3,
+      "m": 4,
+      "q": 17,
+      "matrix": {
+        "kind": "uniform",
+        "seed_hex": "0000000000000000000000000000000000000000000000000000000000000000",
+        "expansion_domain": "FCS-STRUCTURED-LWE-MATRIX-v1",
+        "alphabet": [],
+        "row_weight": null
+      },
+      "b": [
+        3,
+        5,
+        9,
+        8
+      ],
+      "secret_distribution": {
+        "kind": "iid_alphabet",
+        "alphabet": [
+          -1,
+          0,
+          1
+        ],
+        "weight": null,
+        "eta": null
+      },
+      "secret": {
+        "kind": "alphabet",
+        "alphabet": [
+          -1,
+          0,
+          1
+        ],
+        "min_nonzero": 0,
+        "max_nonzero": 3
+      },
+      "error_distribution": {
+        "kind": "bounded_uniform",
+        "sigma": null,
+        "eta": null,
+        "bound": 1,
+        "weight": null
+      },
+      "error": {
+        "max_abs": 1,
+        "max_l1": 4,
+        "max_l2_squared": 4,
+        "max_nonzero": 4
+      },
+      "family": "MIX_DENSE_SMALL",
+      "tier": "synthetic",
+      "cohort": "synthetic",
+      "octave": null,
+      "runtime_bin": "synthetic",
+      "analysis_path": "analysis/toy-uniform.md",
+      "generator_version": "synthetic-fixture-v1",
+      "calibration_status": "unmeasured",
+      "calibration_model_id": "",
+      "predicted_runtime_seconds": 0.0,
+      "measured_runtime_seconds": null,
+      "instance_digest": "d725742c65529afa66f08368c5b093255aab34fe1624fd7cac474d2ab4e0955c"
+    },
+    {
+      "schema_version": 1,
+      "instance_id": "toy-sparse",
+      "n": 4,
+      "m": 3,
+      "q": 19,
+      "matrix": {
+        "kind": "sparse_small_alphabet",
+        "seed_hex": "1111111111111111111111111111111111111111111111111111111111111111",
+        "expansion_domain": "FCS-STRUCTURED-LWE-MATRIX-v1",
+        "alphabet": [
+          -1,
+          1
+        ],
+        "row_weight": 2
+      },
+      "b": [
+        1,
+        0,
+        1
+      ],
+      "secret_distribution": {
+        "kind": "exact_weight_alphabet",
+        "alphabet": [
+          -1,
+          1
+        ],
+        "weight": 2,
+        "eta": null
+      },
+      "secret": {
+        "kind": "alphabet",
+        "alphabet": [
+          -1,
+          0,
+          1
+        ],
+        "min_nonzero": 2,
+        "max_nonzero": 2
+      },
+      "error_distribution": {
+        "kind": "sparse_bounded",
+        "sigma": null,
+        "eta": null,
+        "bound": 1,
+        "weight": 1
+      },
+      "error": {
+        "max_abs": 1,
+        "max_l1": 1,
+        "max_l2_squared": 1,
+        "max_nonzero": 1
+      },
+      "family": "MIX_SMALL_SPARSE",
+      "tier": "synthetic",
+      "cohort": "synthetic",
+      "octave": null,
+      "runtime_bin": "synthetic",
+      "analysis_path": "analysis/toy-sparse.md",
+      "generator_version": "synthetic-fixture-v1",
+      "calibration_status": "unmeasured",
+      "calibration_model_id": "",
+      "predicted_runtime_seconds": 0.0,
+      "measured_runtime_seconds": null,
+      "instance_digest": "c55e6a98668fb7f0d501fe80dc69586d2dcdc1411e0d53eb8da390a324999e3b"
+    }
+  ]
+}
