@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import yaml
+
 from frontier_cs.config import get_problem_extension
 
 
@@ -9,4 +11,153 @@ def test_lwe_structured_recovery_uses_json_reference() -> None:
     assert get_problem_extension(task) == "json"
     assert (task / "reference.json").read_text(encoding="utf-8") == (
         '{"schema_version":1,"solutions":[]}\n'
+    )
+
+
+def test_lwe_structured_recovery_readme_publishes_complete_agent_contract() -> None:
+    root = Path(__file__).parents[1]
+    task = root / "2.0/problems/lwe_structured_recovery"
+    config = yaml.safe_load(
+        (task / "config.yaml").read_text(encoding="utf-8")
+    )
+    readme_raw = (task / "readme").read_text(encoding="utf-8")
+    readme = " ".join(readme_raw.split())
+    paths = readme_raw.split(
+        "## Public catalog and stable Python interface", 1
+    )[1].split("##", 1)[0]
+
+    required_fragments = (
+        "/app/solution.json",
+        "bash /app/submit.sh",
+        "/app/public/catalog.jsonl",
+        "public/lwe_instance.py",
+        "from lwe_instance import Catalog",
+        '"schema_version": 1',
+        '"solutions"',
+        '"instance_id"',
+        '"secret"',
+        "center_q(b_i - (A s)_i)",
+        "error_max_abs",
+        "error_max_l1",
+        "error_max_l2_squared",
+        "error_max_nonzero",
+        "score = 100 * solved_count / instance_count",
+        "score_unbounded = solved_count",
+        "python3 /app/add_solution.py",
+        "2,000,000 bytes",
+        "production catalog contains exactly 200 instances",
+        "canonical empty ledger is pre-provisioned at /app/solution.json",
+        "identical existing witness is an idempotent no-op",
+        "different existing witness is rejected unless you pass --replace",
+        "every repeated safe instance_id invalidates every occurrence",
+        "safe means syntactically valid under the instance-ID regex",
+        "duplicate_count counts distinct syntactically valid IDs",
+        "conflict_count counts distinct IDs",
+        "syntactically valid but unknown instance_id is a per-record",
+        "unknown_instance_id",
+        "does not invalidate the whole ledger",
+        "unknown_count counts distinct regex-valid IDs absent from the catalog",
+        "even when an ID is repeated or another field in its record is malformed",
+        (
+            "unknown_instance_id applies only to a unique otherwise "
+            "syntactically admissible record"
+        ),
+        "invalid_record_fields takes precedence for a unique malformed unknown",
+        "invalid_secret takes precedence for a unique malformed unknown",
+        (
+            "duplicate_instance_id takes precedence for every occurrence "
+            "of a repeated ID"
+        ),
+        "violating a whole-file rule scores zero",
+        "per-record rejection does not invalidate the whole ledger",
+        (
+            "successful add_solution exit and write enforces canonical "
+            "structural ledger rules"
+        ),
+        "does not prove catalog membership or mathematical witness validity",
+        (
+            "refuses an update that would exceed the 200-record or "
+            "2,000,000-byte cap"
+        ),
+        "validate_secret checks mathematical witness validity",
+        "ledger admissibility is a separate check",
+        "secret_alphabet is the acceptance alphabet",
+        (
+            "exact_weight_alphabet generation alphabet is secret_alphabet "
+            "with zero removed"
+        ),
+        (
+            "iid_alphabet and centered_binomial generation and acceptance "
+            "alphabets coincide"
+        ),
+        "Ubuntu 24.04",
+        "Python 3.12",
+        "public feedback",
+        "solved_ids",
+        "rejection_code_counts",
+        "evaluator holds no secret",
+        "submit after every newly validated secret for a previously unsolved instance",
+        "score-changing replacement",
+        "retain all prior entries",
+        (
+            "`bash /app/submit.sh` snapshots and queues the current "
+            "`/app/solution.json`"
+        ),
+        "prints a submission UUID",
+        "bash /app/wait_submission.sh SUBMISSION_UUID",
+        "bash /app/submissions.sh",
+        "only the wait result carries the full score, message, and metrics",
+    )
+    missing = [
+        fragment for fragment in required_fragments if fragment not in readme
+    ]
+    assert not missing, (
+        f"readme is missing agent-contract fragments: {missing}"
+    )
+
+    resources = config["environment"]
+    runtime = config["runtime"]
+    expected_config_fragments = (
+        f"{resources['cpus']} CPU cores",
+        f"{resources['memory_mb'] // 1024} GiB memory",
+        f"{resources['storage_mb'] // 1024} GiB storage",
+        (
+            f"{runtime['timeout_seconds']:,} seconds "
+            f"({runtime['timeout_seconds'] // 3600} hours)"
+        ),
+        (
+            f"{resources['build_timeout_seconds']:,} seconds "
+            f"({resources['build_timeout_seconds'] // 60} minutes)"
+        ),
+        *runtime["pip_packages"],
+    )
+    missing_config = [
+        fragment
+        for fragment in expected_config_fragments
+        if fragment not in readme
+    ]
+    assert not missing_config, (
+        f"readme is stale against config.yaml: {missing_config}"
+    )
+    assert "fplll-tools" in runtime["apt_packages"]
+    assert "fplll-tools" in readme
+    assert (
+        f"at most {config['submission']['max_queue_size']} pending submissions"
+        in readme
+    )
+    assert "/app/submit.sh" in paths
+    assert "Python 3.11" not in readme
+
+
+def test_lwe_structured_recovery_runtime_description_matches_image() -> None:
+    root = Path(__file__).parents[1]
+    task = root / "2.0/problems/lwe_structured_recovery"
+    config = yaml.safe_load(
+        (task / "config.yaml").read_text(encoding="utf-8")
+    )
+
+    assert config["runtime"]["docker"]["image"] == "ubuntu:24.04"
+    assert config["runtime"]["environment"] == (
+        "Public structured-LWE instances; Python 3.12 helper library; "
+        "CPU only"
     )

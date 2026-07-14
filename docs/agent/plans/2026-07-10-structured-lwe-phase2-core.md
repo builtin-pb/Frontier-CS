@@ -6,7 +6,7 @@
 
 **Architecture:** The stable solver-facing API is the single module `harbor/app/public/lwe_instance.py`; it delegates to small modules under `harbor/app/public/lwe_challenge/`. The evaluator parses an untrusted JSON ledger, reconstructs public matrices from committed SHAKE seeds, and accepts any secret satisfying the published secret and residual predicates; it never loads or compares a planted secret. Production instances and long-running attacks are outside this phase; all tests use tiny synthetic instances.
 
-**Tech Stack:** Python 3.11 standard library (`dataclasses`, `hashlib`, `json`, `pathlib`, `secrets`), pytest, Bash, a standalone C11/FIPS-202 matrix oracle, the final task's apt-installed NumPy/SciPy/fpylll/fplll solver dependencies, and the Frontier-CS 2.0 evaluator tuple contract. The Phase 2 evaluator and judge path themselves remain standard-library-only.
+**Tech Stack:** Python 3.11+ standard library (`dataclasses`, `hashlib`, `json`, `pathlib`, `secrets`) with the Ubuntu 24.04 Harbor image using its distro Python 3.12, pytest, Bash, a standalone C11/FIPS-202 matrix oracle, the final task's apt-installed NumPy/SciPy/fpylll/fplll solver dependencies, and the Frontier-CS 2.0 evaluator tuple contract. The Phase 2 evaluator and judge path themselves remain standard-library-only.
 
 ---
 
@@ -206,7 +206,7 @@ the JSON registry entry.
 
 - [x] **Step 3: Create the JSON task metadata and empty ledgers**
 
-  Observed: Created the exact pinned agent runtime configuration without judge dependency fields, and byte-checked both empty ledgers as the required single canonical line with a final LF.
+  Observed: Created the pinned agent runtime configuration without judge dependency fields, and byte-checked both empty ledgers as the required single canonical line with a final LF. Task 12's adapter-level documentation audit later corrected only the environment label from Python 3.11 to the Ubuntu 24.04 image's actual distro Python 3.12; the image and dependency pins are unchanged.
 
 Create `config.yaml` exactly as:
 
@@ -215,7 +215,7 @@ tag: security
 runtime:
   language: json
   timeout_seconds: 10800
-  environment: "Public structured-LWE instances; Python 3.11 helper library; CPU only"
+  environment: "Public structured-LWE instances; Python 3.12 helper library; CPU only"
   apt_packages:
     - build-essential
     - ca-certificates
@@ -1353,23 +1353,32 @@ git commit -m "feat(structured-lwe): wire secretless FCS evaluator"
 
 **Files:**
 - Create: `2.0/problems/lwe_structured_recovery/readme`
-- Modify: `2.0/problems/lwe_structured_recovery/harbor/app/solution.json`
+- Modify: `2.0/problems/lwe_structured_recovery/config.yaml`
+- Verify unchanged: `2.0/problems/lwe_structured_recovery/harbor/app/solution.json`
 - Test: `2.0/problems/lwe_structured_recovery/tests/`
-- Test: `tests/test_lwe_structured_recovery_registration.py`
+- Modify: `tests/test_lwe_structured_recovery_registration.py`
 
-- [ ] **Step 1: Write the readme-contract test first**
+- [x] **Step 1: Write the readme-contract test first**
+
+  Observed: Extended the root contract test before the readme existed. Review-driven RED cycles then pinned the whole-ledger byte cap, production size, runtime truth, duplicate/conflict/unknown units and precedence, helper guarantees, async feedback commands, and structured cross-checks against `config.yaml`.
 
 Extend `tests/test_lwe_structured_recovery_registration.py` to assert the readme names `/app/solution.json`, `bash /app/submit.sh`, `public/lwe_instance.py`, cumulative submissions, equal per-instance scoring, exact duplicate behavior, conflicting duplicate behavior, and the fact that the evaluator holds no secret.
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
+
+  Observed: The initial run produced the intended missing-readme failure (`1 failed, 1 passed`). Later review regressions separately failed on the stale Python claim and missing feedback/unknown/helper clauses before their documentation fixes.
 
 Expected: FAIL because `readme` is absent.
 
-- [ ] **Step 3: Write the complete agent readme**
+- [x] **Step 3: Write the complete agent readme**
+
+  Observed: Documented the stable facade, exact mathematical and ledger predicates, 200-record/2,000,000-byte limits, equal scoring, secretless evaluator, atomic cumulative helper, duplicate/conflict/unknown semantics, aggregate redacted feedback, submit/wait/list workflow, and CPU/memory/storage/runtime/dependency budget. A cold reader verified the `validate → add_solution → submit → wait` workflow without remaining submission-affecting ambiguity. Adapter inspection corrected the environment description from Python 3.11 to Ubuntu 24.04's distro Python 3.12 without changing the image or dependency pins.
 
 Document the public catalog, stable Python facade with a runnable import example, JSON ledger schema, strict validity predicates, equal-count formula, cumulative merge workflow using `add_solution.py`, CPU/memory/time budget, public feedback fields, and explicit instruction to submit after every newly validated secret while retaining previous entries.
 
-- [ ] **Step 4: Run the complete task-local and root suites**
+- [x] **Step 4: Run the complete task-local and root suites**
+
+  Observed: Fresh final verification passed the complete task-local suite (`375 passed`) and full root suite (`40 passed`, one unrelated `google.generativeai` deprecation warning). Project-Python compilation and Bash syntax passed. The local macOS `python3` is 3.9, so compilation used `uv run python`, while the configured Harbor image uses Python 3.12.
 
 Run without invoking any recovery solver:
 
@@ -1381,16 +1390,20 @@ PYTHONPYCACHEPREFIX=/private/tmp/frontier-cs-pycache python3 -m py_compile 2.0/p
 
 Expected: all task-local and root tests pass; compilation exits zero. Do not run a lattice solver or any calibrated attack.
 
-- [ ] **Step 5: Run the local empty-ledger smoke**
+- [x] **Step 5: Run the local empty-ledger smoke**
+
+  Observed: The canonical starter and reference ledgers are byte-identical. The authorized synthetic empty-ledger smoke emitted the sanitized public summary and final stdout line `0.000000000000 0.000000000000`; no solver, recovery, calibration, or production generation ran.
 
 Run: `FCS_STRUCTURED_LWE_CATALOG=$PWD/2.0/problems/lwe_structured_recovery/catalog.synthetic.json python3 2.0/problems/lwe_structured_recovery/evaluator.py 2.0/problems/lwe_structured_recovery/reference.json`
 
 Expected final stdout line: `0.000000000000 0.000000000000`.
 
-- [ ] **Step 6: Commit the documented core**
+- [x] **Step 6: Commit the documented core**
+
+  Observed: Independent specification and quality re-reviews approved the final contract with no remaining Critical or Important findings, and a context-free reader followed the complete validate→add→submit→wait workflow without submission-affecting ambiguity. The slice is accepted under the planned documentation commit boundary; `solution.json` required no change.
 
 ```bash
-git add 2.0/problems/lwe_structured_recovery/readme 2.0/problems/lwe_structured_recovery/harbor/app/solution.json tests/test_lwe_structured_recovery_registration.py
+git add 2.0/problems/lwe_structured_recovery/readme 2.0/problems/lwe_structured_recovery/config.yaml tests/test_lwe_structured_recovery_registration.py docs/agent/plans/2026-07-10-structured-lwe-phase2-core.md
 git commit -m "docs(structured-lwe): document public witness workflow"
 ```
 
