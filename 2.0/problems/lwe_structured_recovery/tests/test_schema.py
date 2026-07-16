@@ -40,6 +40,33 @@ def test_catalog_loads_dimensions_and_public_predicates() -> None:
     assert toy.error.max_abs == 1
 
 
+def test_catalog_load_fd_is_suffix_independent_and_pins_open_inode(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "catalog-without-format-suffix"
+    original = FIXTURE_PATH.read_bytes()
+    path.write_bytes(original)
+    descriptor = os.open(path, os.O_RDONLY)
+    try:
+        replacement = tmp_path / "replacement"
+        replacement.write_bytes(b'{"schema_version":1,"instances":[]}')
+        os.replace(replacement, path)
+        catalog = Catalog.load_fd(descriptor, "json")
+    finally:
+        os.close(descriptor)
+    assert catalog.catalog_id == hashlib.sha256(original).hexdigest()
+
+
+@pytest.mark.parametrize("catalog_format", ["", "JSON", "jsonl ", "yaml", None])
+def test_catalog_load_fd_rejects_unknown_explicit_format(catalog_format: object) -> None:
+    descriptor = os.open(FIXTURE_PATH, os.O_RDONLY)
+    try:
+        with pytest.raises((TypeError, ValueError), match="catalog format"):
+            Catalog.load_fd(descriptor, catalog_format)  # type: ignore[arg-type]
+    finally:
+        os.close(descriptor)
+
+
 def test_catalog_rejects_unknown_nested_fields(tmp_path: Path) -> None:
     document = _catalog_document()
     document["instances"][0]["matrix"]["surprise"] = True
@@ -197,6 +224,71 @@ def test_catalog_requires_canonical_full_field_secret_specs(tmp_path: Path) -> N
     _refresh_digest(document)
 
     with pytest.raises(ValueError, match="missing secret_distribution fields.*eta"):
+        Catalog.load(_write_json_catalog(tmp_path, document))
+
+
+def test_catalog_accepts_balanced_exact_weight_signed_distribution(
+    tmp_path: Path,
+) -> None:
+    document = _catalog_document()
+    record = document["instances"][0]
+    record["n"] = 4
+    record["secret_distribution"] = {
+        "kind": "balanced_exact_weight_signed",
+        "alphabet": [-1, 1],
+        "weight": 2,
+        "eta": None,
+    }
+    record["secret"] = {
+        "kind": "alphabet",
+        "alphabet": [-1, 0, 1],
+        "min_nonzero": 2,
+        "max_nonzero": 2,
+    }
+    _refresh_digest(document)
+
+    instance = Catalog.load(_write_json_catalog(tmp_path, document)).get(
+        record["instance_id"]
+    )
+
+    assert instance.secret_distribution.kind == "balanced_exact_weight_signed"
+    assert instance.secret_distribution.alphabet == (-1, 1)
+    assert instance.secret_distribution.weight == 2
+    assert instance.secret_distribution.eta is None
+    assert instance.secret.alphabet == (-1, 0, 1)
+    assert instance.secret.min_nonzero == instance.secret.max_nonzero == 2
+
+
+@pytest.mark.parametrize(
+    ("updates", "message"),
+    [
+        ({"alphabet": [1]}, "alphabet.*exactly"),
+        ({"alphabet": [-1, 2]}, "alphabet.*exactly"),
+        ({"weight": 1}, "even weight"),
+        ({"eta": 1}, "must not set secret eta"),
+    ],
+)
+def test_catalog_rejects_invalid_balanced_exact_weight_signed_distribution(
+    tmp_path: Path, updates: dict[str, object], message: str
+) -> None:
+    document = _catalog_document()
+    record = document["instances"][0]
+    record["secret_distribution"] = {
+        "kind": "balanced_exact_weight_signed",
+        "alphabet": [-1, 1],
+        "weight": 2,
+        "eta": None,
+        **updates,
+    }
+    record["secret"] = {
+        "kind": "alphabet",
+        "alphabet": [-1, 0, 1],
+        "min_nonzero": record["secret_distribution"]["weight"],
+        "max_nonzero": record["secret_distribution"]["weight"],
+    }
+    _refresh_digest(document)
+
+    with pytest.raises(ValueError, match=message):
         Catalog.load(_write_json_catalog(tmp_path, document))
 
 

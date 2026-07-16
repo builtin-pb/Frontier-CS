@@ -1,0 +1,127 @@
+{
+  "analysis_path": "analyses/lwe_0056.md",
+  "analytical_model": {
+    "attacks": [
+      {
+        "assumed_rate_per_second": 200000.0,
+        "attack_id": "dense-domain-enumeration",
+        "formula": "secret_alphabet_size^n/rate",
+        "predicted_runtime_seconds": 2.3611832414348228e+16,
+        "sign_assignment_count": null,
+        "work_factor": 4722366482869645213696
+      },
+      {
+        "applicability": "heuristic proxy, not a reduction or hardness claim",
+        "attack_id": "normal-lwe-estimator-proxy",
+        "attack_results": [
+          {
+            "algorithm": "primal_usvp",
+            "beta": 114,
+            "rop_log2": 33.288
+          },
+          {
+            "algorithm": "primal_bdd",
+            "beta": 68,
+            "rop_log2": 33.58010661622191
+          },
+          {
+            "algorithm": "primal_hybrid",
+            "beta": 68,
+            "options": {
+              "babai": false,
+              "mitm": false
+            },
+            "rop_log2": 33.58010661622191
+          },
+          {
+            "algorithm": "primal_hybrid_mitm",
+            "beta": 40,
+            "options": {
+              "babai": true,
+              "mitm": true
+            },
+            "rop_log2": 49.597317681605176
+          }
+        ],
+        "configuration": {
+          "estimator_error_distribution": "Uniform(-153,153)",
+          "estimator_secret_distribution": "Uniform(0,1)",
+          "m": 80,
+          "n": 72,
+          "q": 1229,
+          "reduction_cost_model": "ADPS16",
+          "reduction_shape_model": "gsa"
+        },
+        "fastest_rop_log2": 33.288,
+        "matrix_model": "uniform public matrix",
+        "normalization": {
+          "formula": "2^fastest_rop_log2/rop_per_second",
+          "rop_per_second": 1000000.0
+        },
+        "predicted_runtime_seconds": 10487.850684158338,
+        "provenance": {
+          "cached_image_digest": "725595ce2bb23a86890808074388c24b01903c46f2a78f9aa5ca57412a7cbfee",
+          "source_archive_sha256": "aab320966fe4dc496a44e9223ab67d622e581d9ed052697e758907b0e437d539"
+        },
+        "secret_mapping": "exact iid binary distribution"
+      }
+    ],
+    "formula": "min(enumeration_seconds,normal_lwe_proxy_seconds)",
+    "model_id": "analytical-attack-portfolio-min-v1",
+    "predicted_runtime_seconds": 10487.850684158338,
+    "selected_attack": "normal-lwe-estimator-proxy"
+  },
+  "calibration_model_id": "analytical-attack-portfolio-min-v1",
+  "calibration_status": "extrapolated",
+  "cohort": "ladder",
+  "error": {
+    "max_abs": 153,
+    "max_l1": 12240,
+    "max_l2_squared": 1872720,
+    "max_nonzero": 80
+  },
+  "error_distribution": {
+    "bound": 153,
+    "eta": null,
+    "kind": "bounded_uniform",
+    "sigma": null,
+    "weight": null
+  },
+  "family": "DS_SMALL",
+  "generator_version": "structured-lwe-corpus-v1",
+  "instance_id": "lwe_0056",
+  "m": 80,
+  "matrix": {
+    "alphabet": [],
+    "expansion_domain": "FCS-STRUCTURED-LWE-MATRIX-v1",
+    "kind": "uniform",
+    "row_weight": null,
+    "seed_hex": "e4f817a9118c879e257e9a8ede0f6d95f3cfff7b3aa525808ee709f2cbe29f1c"
+  },
+  "measured_runtime_seconds": null,
+  "n": 72,
+  "octave": 1,
+  "predicted_runtime_seconds": 10487.850684158338,
+  "q": 1229,
+  "runtime_bin": "H1",
+  "secret": {
+    "alphabet": [
+      0,
+      1
+    ],
+    "kind": "alphabet",
+    "max_nonzero": 72,
+    "min_nonzero": 0
+  },
+  "secret_distribution": {
+    "alphabet": [
+      0,
+      1
+    ],
+    "eta": null,
+    "kind": "iid_alphabet",
+    "weight": null
+  },
+  "target_runtime_seconds": 11523.989413165902,
+  "tier": "hard"
+}

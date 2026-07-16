@@ -54,3 +54,4 @@ generation_logs/
 *.swp
 
 *.lock
+.venv-lwe-structured-recovery/

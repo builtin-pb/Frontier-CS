@@ -1,0 +1,97 @@
+{
+  "analysis_path": "analyses/lwe_0143.md",
+  "analytical_model": {
+    "attacks": [
+      {
+        "assumed_rate_per_second": 13953.488372093023,
+        "attack_id": "exact-secret-enumeration",
+        "formula": "binomial(n,h)*nonzero_alphabet_size^h/(2.4e+06/n)",
+        "measured_candidate_rate_n_product": 1200000.0,
+        "nonzero_alphabet_size": 1,
+        "predicted_runtime_seconds": 59.7227,
+        "rate_model": "2*measured_candidate_rate_n_product/n",
+        "work_factor": 833340
+      },
+      {
+        "applicability": "heuristic statistical regime q <= 3^k; release-byte screen required",
+        "attack_id": "mixed-filter-greedy",
+        "candidate_sizing_screen": {
+          "divisor": 60000.0,
+          "formula": "n^3/60000",
+          "interpretation": "non-runtime dimension-sizing screen; not an attack bound",
+          "value_seconds": 84.80746666666667
+        },
+        "paper_asymptotic_complexity": "O(m*k*3^k)",
+        "paper_parameters": {
+          "k": 27,
+          "m": 352,
+          "q": 4093,
+          "q_le_3_pow_k": true
+        },
+        "paper_work_factor": 72473678497316448,
+        "release_screen": {
+          "evidence_location": "CALIBRATION.md",
+          "required_no_recovery_before_seconds": 16.0
+        },
+        "runtime_prediction_status": "not-modeled"
+      }
+    ],
+    "formula": "exact_secret_enumeration",
+    "model_id": "analytical-easy-exact-secret-with-mixed-screen-v1",
+    "predicted_runtime_seconds": 59.7227,
+    "selected_attack": "exact-secret-enumeration",
+    "selection_rule": "maximize exact secret weight, then minimize log-distance to the slot target subject to the exact-runtime bin and sizing screen"
+  },
+  "calibration_model_id": "analytical-easy-exact-secret-with-mixed-screen-v1",
+  "calibration_status": "extrapolated",
+  "cohort": "paper",
+  "error": {
+    "max_abs": 511,
+    "max_l1": 179872,
+    "max_l2_squared": 91914592,
+    "max_nonzero": 352
+  },
+  "error_distribution": {
+    "bound": 511,
+    "eta": null,
+    "kind": "truncated_discrete_gaussian",
+    "sigma": 170.33333333333334,
+    "weight": null
+  },
+  "family": "MIX_Q_SPARSE",
+  "generator_version": "structured-lwe-corpus-v1",
+  "instance_id": "lwe_0143",
+  "m": 352,
+  "matrix": {
+    "alphabet": [],
+    "expansion_domain": "FCS-STRUCTURED-LWE-MATRIX-v1",
+    "kind": "sparse_uniform",
+    "row_weight": 27,
+    "seed_hex": "da4016efe1bcb6b9989497486740862c4af6eacab21718e06f27dcca8a76c056"
+  },
+  "measured_runtime_seconds": null,
+  "n": 172,
+  "octave": null,
+  "predicted_runtime_seconds": 59.7227,
+  "q": 4093,
+  "runtime_bin": "E2",
+  "secret": {
+    "alphabet": [
+      0,
+      1
+    ],
+    "kind": "alphabet",
+    "max_nonzero": 3,
+    "min_nonzero": 3
+  },
+  "secret_distribution": {
+    "alphabet": [
+      1
+    ],
+    "eta": null,
+    "kind": "exact_weight_alphabet",
+    "weight": 3
+  },
+  "target_runtime_seconds": 59.714111458355674,
+  "tier": "easy"
+}

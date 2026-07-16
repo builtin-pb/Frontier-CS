@@ -13,6 +13,20 @@ if TYPE_CHECKING:
     from lwe_challenge.schema import Catalog
 
 
+SOLVER_FIXTURE_IDS = (
+    "binary_fixture",
+    "repeated_support_fixture",
+    "graph_peeling_fixture",
+    "dense_minor_fixture",
+    "mixed_fixture",
+    "sparse_error_fixture",
+    "primal_fixture",
+    "hybrid_fixture",
+    "unique_fixture",
+    "multiple_witness_fixture",
+)
+
+
 TASK_DIR = Path(__file__).resolve().parents[1]
 APP_DIR = TASK_DIR / "harbor" / "app"
 PUBLIC_DIR = APP_DIR / "public"
@@ -60,3 +74,38 @@ def valid_submission_bytes() -> bytes:
 @pytest.fixture
 def task_module_loader() -> Callable[[Path, str], ModuleType]:
     return load_task_module
+
+
+def pytest_configure(config: pytest.Config) -> None:
+    config.addinivalue_line(
+        "markers",
+        "recovery: executes an exact secret-recovery fixture",
+    )
+    config.addinivalue_line(
+        "markers",
+        "post_recovery: audits recovery outputs without executing solvers",
+    )
+
+
+@pytest.fixture
+def solver_catalog_path() -> Path:
+    return FIXTURES_DIR / "solver_catalog.json"
+
+
+@pytest.fixture
+def solver_catalog(solver_catalog_path: Path):
+    import lwe_instance
+
+    return lwe_instance.Catalog.load(solver_catalog_path)
+
+
+def _solver_instance_fixture(instance_id: str):
+    @pytest.fixture(name=instance_id)
+    def fixture(solver_catalog):
+        return solver_catalog.get(instance_id)
+
+    return fixture
+
+
+for _fixture_id in SOLVER_FIXTURE_IDS:
+    globals()[_fixture_id] = _solver_instance_fixture(_fixture_id)

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import sys
+import tomllib
 from pathlib import Path
 
 import pytest
@@ -58,6 +59,10 @@ submission:
         "raise SystemExit('fixture solver must not enter the judge image')\n",
         encoding="utf-8",
     )
+    bytecode = app / "__pycache__"
+    bytecode.mkdir()
+    bytecode.joinpath("stale.cpython-311.pyc").write_bytes(b"stale")
+    solver_dir.joinpath("stale.pyo").write_bytes(b"stale")
     analyses = app / "analyses"
     analyses.mkdir()
     analyses.joinpath("fixture_0001.md").write_text(
@@ -68,6 +73,9 @@ submission:
         public = app / "public"
         public.mkdir()
         public.joinpath("catalog.jsonl").write_bytes(PUBLIC_PAYLOAD)
+        public_cache = public / "__pycache__"
+        public_cache.mkdir()
+        public_cache.joinpath("stale.cpython-311.pyc").write_bytes(b"stale")
     return repo
 
 
@@ -100,6 +108,22 @@ def test_public_assets_are_staged_for_agent_and_copied_to_judge(
     assert "harbor_app/tools" not in judge
     assert "harbor_app/analyses" not in judge
     assert "{judge_public_assets}" not in judge
+
+
+def test_generated_task_metadata_uses_problem_tag(tmp_path: Path) -> None:
+    task = _generate_fixture(tmp_path, include_public=True)
+    config = tomllib.loads(task.joinpath("task.toml").read_text(encoding="utf-8"))
+
+    assert "security" in config["task"]["keywords"]
+    assert "geometry" not in config["task"]["keywords"]
+
+
+def test_agent_snapshot_excludes_python_bytecode(tmp_path: Path) -> None:
+    task = _generate_fixture(tmp_path, include_public=True)
+    packaged = task / "environment" / "harbor_app"
+
+    assert not any(path.name == "__pycache__" for path in packaged.rglob("*"))
+    assert not any(path.suffix in {".pyc", ".pyo"} for path in packaged.rglob("*"))
 
 
 def test_agent_only_pip_packages_do_not_enter_judge(tmp_path: Path) -> None:

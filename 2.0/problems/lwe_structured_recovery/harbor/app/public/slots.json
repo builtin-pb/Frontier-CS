@@ -1,0 +1,1802 @@
+[
+  {
+    "cohort": "paper",
+    "family": "DS_BIN",
+    "instance_id": "lwe_0001",
+    "octave": null,
+    "runtime_bin": "E0",
+    "target_runtime_seconds": 1.0717734625362931,
+    "tier": "easy"
+  },
+  {
+    "cohort": "paper",
+    "family": "DS_BIN",
+    "instance_id": "lwe_0002",
+    "octave": null,
+    "runtime_bin": "E1",
+    "target_runtime_seconds": 4.924577653379665,
+    "tier": "easy"
+  },
+  {
+    "cohort": "paper",
+    "family": "DS_BIN",
+    "instance_id": "lwe_0003",
+    "octave": null,
+    "runtime_bin": "E2",
+    "target_runtime_seconds": 22.627416997969522,
+    "tier": "easy"
+  },
+  {
+    "cohort": "paper",
+    "family": "DS_BIN",
+    "instance_id": "lwe_0004",
+    "octave": null,
+    "runtime_bin": "E3",
+    "target_runtime_seconds": 103.96830673359814,
+    "tier": "easy"
+  },
+  {
+    "cohort": "paper",
+    "family": "DS_BIN",
+    "instance_id": "lwe_0005",
+    "octave": null,
+    "runtime_bin": "E4",
+    "target_runtime_seconds": 477.7128916668454,
+    "tier": "easy"
+  },
+  {
+    "cohort": "paper",
+    "family": "DS_BIN",
+    "instance_id": "lwe_0006",
+    "octave": null,
+    "runtime_bin": "E5",
+    "target_runtime_seconds": 2044.567042624524,
+    "tier": "easy"
+  },
+  {
+    "cohort": "ladder",
+    "family": "DS_BIN",
+    "instance_id": "lwe_0007",
+    "octave": 0,
+    "runtime_bin": "H0",
+    "target_runtime_seconds": 3690.2311630771487,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "DS_BIN",
+    "instance_id": "lwe_0008",
+    "octave": 1,
+    "runtime_bin": "H1",
+    "target_runtime_seconds": 7755.069785536611,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "DS_BIN",
+    "instance_id": "lwe_0009",
+    "octave": 2,
+    "runtime_bin": "H2",
+    "target_runtime_seconds": 16297.382120743181,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "DS_BIN",
+    "instance_id": "lwe_0010",
+    "octave": 3,
+    "runtime_bin": "H3",
+    "target_runtime_seconds": 34249.16491207836,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "DS_BIN",
+    "instance_id": "lwe_0011",
+    "octave": 4,
+    "runtime_bin": "H4",
+    "target_runtime_seconds": 71975.07479939048,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "DS_BIN",
+    "instance_id": "lwe_0012",
+    "octave": 5,
+    "runtime_bin": "H5",
+    "target_runtime_seconds": 151256.57532604324,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "DS_BIN",
+    "instance_id": "lwe_0013",
+    "octave": 6,
+    "runtime_bin": "H6",
+    "target_runtime_seconds": 317867.7013275813,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "DS_BIN",
+    "instance_id": "lwe_0014",
+    "octave": 7,
+    "runtime_bin": "H7",
+    "target_runtime_seconds": 668003.1947667896,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "DS_BIN",
+    "instance_id": "lwe_0015",
+    "octave": 8,
+    "runtime_bin": "H8",
+    "target_runtime_seconds": 1403817.583085528,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "DS_BIN",
+    "instance_id": "lwe_0016",
+    "octave": 9,
+    "runtime_bin": "H9",
+    "target_runtime_seconds": 2950141.2897704714,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "DS_BIN",
+    "instance_id": "lwe_0017",
+    "octave": 0,
+    "runtime_bin": "H0",
+    "target_runtime_seconds": 6054.454189826744,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "DS_BIN",
+    "instance_id": "lwe_0018",
+    "octave": 1,
+    "runtime_bin": "H1",
+    "target_runtime_seconds": 12723.515866764503,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "DS_BIN",
+    "instance_id": "lwe_0019",
+    "octave": 2,
+    "runtime_bin": "H2",
+    "target_runtime_seconds": 26738.637528024745,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "DS_BIN",
+    "instance_id": "lwe_0020",
+    "octave": 3,
+    "runtime_bin": "H3",
+    "target_runtime_seconds": 56191.60178222822,
+    "tier": "hard"
+  },
+  {
+    "cohort": "paper",
+    "family": "DS_TER",
+    "instance_id": "lwe_0021",
+    "octave": null,
+    "runtime_bin": "E0",
+    "target_runtime_seconds": 1.2311444133449163,
+    "tier": "easy"
+  },
+  {
+    "cohort": "paper",
+    "family": "DS_TER",
+    "instance_id": "lwe_0022",
+    "octave": null,
+    "runtime_bin": "E1",
+    "target_runtime_seconds": 5.656854249492381,
+    "tier": "easy"
+  },
+  {
+    "cohort": "paper",
+    "family": "DS_TER",
+    "instance_id": "lwe_0023",
+    "octave": null,
+    "runtime_bin": "E2",
+    "target_runtime_seconds": 25.992076683399535,
+    "tier": "easy"
+  },
+  {
+    "cohort": "paper",
+    "family": "DS_TER",
+    "instance_id": "lwe_0024",
+    "octave": null,
+    "runtime_bin": "E3",
+    "target_runtime_seconds": 119.42822291671135,
+    "tier": "easy"
+  },
+  {
+    "cohort": "paper",
+    "family": "DS_TER",
+    "instance_id": "lwe_0025",
+    "octave": null,
+    "runtime_bin": "E4",
+    "target_runtime_seconds": 548.7480128185821,
+    "tier": "easy"
+  },
+  {
+    "cohort": "paper",
+    "family": "DS_TER",
+    "instance_id": "lwe_0026",
+    "octave": null,
+    "runtime_bin": "E5",
+    "target_runtime_seconds": 2318.470692066211,
+    "tier": "easy"
+  },
+  {
+    "cohort": "ladder",
+    "family": "DS_TER",
+    "instance_id": "lwe_0027",
+    "octave": 1,
+    "runtime_bin": "H1",
+    "target_runtime_seconds": 7380.462326154297,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "DS_TER",
+    "instance_id": "lwe_0028",
+    "octave": 2,
+    "runtime_bin": "H2",
+    "target_runtime_seconds": 15510.139571073221,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "DS_TER",
+    "instance_id": "lwe_0029",
+    "octave": 3,
+    "runtime_bin": "H3",
+    "target_runtime_seconds": 32594.764241486362,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "DS_TER",
+    "instance_id": "lwe_0030",
+    "octave": 4,
+    "runtime_bin": "H4",
+    "target_runtime_seconds": 68498.32982415672,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "DS_TER",
+    "instance_id": "lwe_0031",
+    "octave": 5,
+    "runtime_bin": "H5",
+    "target_runtime_seconds": 143950.14959878096,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "DS_TER",
+    "instance_id": "lwe_0032",
+    "octave": 6,
+    "runtime_bin": "H6",
+    "target_runtime_seconds": 302513.1506520865,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "DS_TER",
+    "instance_id": "lwe_0033",
+    "octave": 7,
+    "runtime_bin": "H7",
+    "target_runtime_seconds": 635735.4026551626,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "DS_TER",
+    "instance_id": "lwe_0034",
+    "octave": 8,
+    "runtime_bin": "H8",
+    "target_runtime_seconds": 1336006.38953358,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "DS_TER",
+    "instance_id": "lwe_0035",
+    "octave": 9,
+    "runtime_bin": "H9",
+    "target_runtime_seconds": 2807635.166171056,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "DS_TER",
+    "instance_id": "lwe_0036",
+    "octave": 0,
+    "runtime_bin": "H0",
+    "target_runtime_seconds": 5761.994706582951,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "DS_TER",
+    "instance_id": "lwe_0037",
+    "octave": 1,
+    "runtime_bin": "H1",
+    "target_runtime_seconds": 12108.908379653489,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "DS_TER",
+    "instance_id": "lwe_0038",
+    "octave": 2,
+    "runtime_bin": "H2",
+    "target_runtime_seconds": 25447.031733529002,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "DS_TER",
+    "instance_id": "lwe_0039",
+    "octave": 3,
+    "runtime_bin": "H3",
+    "target_runtime_seconds": 53477.27505604949,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "DS_TER",
+    "instance_id": "lwe_0040",
+    "octave": 4,
+    "runtime_bin": "H4",
+    "target_runtime_seconds": 112383.20356445645,
+    "tier": "hard"
+  },
+  {
+    "cohort": "paper",
+    "family": "DS_SMALL",
+    "instance_id": "lwe_0041",
+    "octave": null,
+    "runtime_bin": "E0",
+    "target_runtime_seconds": 1.4142135623730951,
+    "tier": "easy"
+  },
+  {
+    "cohort": "paper",
+    "family": "DS_SMALL",
+    "instance_id": "lwe_0042",
+    "octave": null,
+    "runtime_bin": "E1",
+    "target_runtime_seconds": 6.498019170849884,
+    "tier": "easy"
+  },
+  {
+    "cohort": "paper",
+    "family": "DS_SMALL",
+    "instance_id": "lwe_0043",
+    "octave": null,
+    "runtime_bin": "E2",
+    "target_runtime_seconds": 29.857055729177837,
+    "tier": "easy"
+  },
+  {
+    "cohort": "paper",
+    "family": "DS_SMALL",
+    "instance_id": "lwe_0044",
+    "octave": null,
+    "runtime_bin": "E3",
+    "target_runtime_seconds": 137.18700320464552,
+    "tier": "easy"
+  },
+  {
+    "cohort": "paper",
+    "family": "DS_SMALL",
+    "instance_id": "lwe_0045",
+    "octave": null,
+    "runtime_bin": "E4",
+    "target_runtime_seconds": 630.3459396325972,
+    "tier": "easy"
+  },
+  {
+    "cohort": "paper",
+    "family": "DS_SMALL",
+    "instance_id": "lwe_0046",
+    "octave": null,
+    "runtime_bin": "E5",
+    "target_runtime_seconds": 2629.0682760247973,
+    "tier": "easy"
+  },
+  {
+    "cohort": "ladder",
+    "family": "DS_SMALL",
+    "instance_id": "lwe_0047",
+    "octave": 2,
+    "runtime_bin": "H2",
+    "target_runtime_seconds": 14760.924652308591,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "DS_SMALL",
+    "instance_id": "lwe_0048",
+    "octave": 3,
+    "runtime_bin": "H3",
+    "target_runtime_seconds": 31020.279142146443,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "DS_SMALL",
+    "instance_id": "lwe_0049",
+    "octave": 4,
+    "runtime_bin": "H4",
+    "target_runtime_seconds": 65189.52848297274,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "DS_SMALL",
+    "instance_id": "lwe_0050",
+    "octave": 5,
+    "runtime_bin": "H5",
+    "target_runtime_seconds": 136996.65964831345,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "DS_SMALL",
+    "instance_id": "lwe_0051",
+    "octave": 6,
+    "runtime_bin": "H6",
+    "target_runtime_seconds": 287900.2991975619,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "DS_SMALL",
+    "instance_id": "lwe_0052",
+    "octave": 7,
+    "runtime_bin": "H7",
+    "target_runtime_seconds": 605026.301304173,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "DS_SMALL",
+    "instance_id": "lwe_0053",
+    "octave": 8,
+    "runtime_bin": "H8",
+    "target_runtime_seconds": 1271470.8053103245,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "DS_SMALL",
+    "instance_id": "lwe_0054",
+    "octave": 9,
+    "runtime_bin": "H9",
+    "target_runtime_seconds": 2672012.77906716,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "DS_SMALL",
+    "instance_id": "lwe_0055",
+    "octave": 0,
+    "runtime_bin": "H0",
+    "target_runtime_seconds": 5483.662433927841,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "DS_SMALL",
+    "instance_id": "lwe_0056",
+    "octave": 1,
+    "runtime_bin": "H1",
+    "target_runtime_seconds": 11523.989413165902,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "DS_SMALL",
+    "instance_id": "lwe_0057",
+    "octave": 2,
+    "runtime_bin": "H2",
+    "target_runtime_seconds": 24217.816759306977,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "DS_SMALL",
+    "instance_id": "lwe_0058",
+    "octave": 3,
+    "runtime_bin": "H3",
+    "target_runtime_seconds": 50894.063467058004,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "DS_SMALL",
+    "instance_id": "lwe_0059",
+    "octave": 4,
+    "runtime_bin": "H4",
+    "target_runtime_seconds": 106954.550112099,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "DS_SMALL",
+    "instance_id": "lwe_0060",
+    "octave": 5,
+    "runtime_bin": "H5",
+    "target_runtime_seconds": 224766.4071289129,
+    "tier": "hard"
+  },
+  {
+    "cohort": "paper",
+    "family": "SA_Q",
+    "instance_id": "lwe_0061",
+    "octave": null,
+    "runtime_bin": "E0",
+    "target_runtime_seconds": 1.624504792712471,
+    "tier": "easy"
+  },
+  {
+    "cohort": "paper",
+    "family": "SA_Q",
+    "instance_id": "lwe_0062",
+    "octave": null,
+    "runtime_bin": "E1",
+    "target_runtime_seconds": 7.464263932294459,
+    "tier": "easy"
+  },
+  {
+    "cohort": "paper",
+    "family": "SA_Q",
+    "instance_id": "lwe_0063",
+    "octave": null,
+    "runtime_bin": "E2",
+    "target_runtime_seconds": 34.29675080116138,
+    "tier": "easy"
+  },
+  {
+    "cohort": "paper",
+    "family": "SA_Q",
+    "instance_id": "lwe_0064",
+    "octave": null,
+    "runtime_bin": "E3",
+    "target_runtime_seconds": 157.5864849081493,
+    "tier": "easy"
+  },
+  {
+    "cohort": "paper",
+    "family": "SA_Q",
+    "instance_id": "lwe_0065",
+    "octave": null,
+    "runtime_bin": "E4",
+    "target_runtime_seconds": 724.0773439350247,
+    "tier": "easy"
+  },
+  {
+    "cohort": "paper",
+    "family": "SA_Q",
+    "instance_id": "lwe_0066",
+    "octave": null,
+    "runtime_bin": "E5",
+    "target_runtime_seconds": 2981.2755553274023,
+    "tier": "easy"
+  },
+  {
+    "cohort": "ladder",
+    "family": "SA_Q",
+    "instance_id": "lwe_0067",
+    "octave": 3,
+    "runtime_bin": "H3",
+    "target_runtime_seconds": 29521.849304617182,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "SA_Q",
+    "instance_id": "lwe_0068",
+    "octave": 4,
+    "runtime_bin": "H4",
+    "target_runtime_seconds": 62040.558284292856,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "SA_Q",
+    "instance_id": "lwe_0069",
+    "octave": 5,
+    "runtime_bin": "H5",
+    "target_runtime_seconds": 130379.05696594548,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "SA_Q",
+    "instance_id": "lwe_0070",
+    "octave": 6,
+    "runtime_bin": "H6",
+    "target_runtime_seconds": 273993.3192966269,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "SA_Q",
+    "instance_id": "lwe_0071",
+    "octave": 7,
+    "runtime_bin": "H7",
+    "target_runtime_seconds": 575800.5983951238,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "SA_Q",
+    "instance_id": "lwe_0072",
+    "octave": 8,
+    "runtime_bin": "H8",
+    "target_runtime_seconds": 1210052.6026083452,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "SA_Q",
+    "instance_id": "lwe_0073",
+    "octave": 9,
+    "runtime_bin": "H9",
+    "target_runtime_seconds": 2542941.610620649,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "SA_Q",
+    "instance_id": "lwe_0074",
+    "octave": 0,
+    "runtime_bin": "H0",
+    "target_runtime_seconds": 5218.774959115543,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "SA_Q",
+    "instance_id": "lwe_0075",
+    "octave": 1,
+    "runtime_bin": "H1",
+    "target_runtime_seconds": 10967.324867855685,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "SA_Q",
+    "instance_id": "lwe_0076",
+    "octave": 2,
+    "runtime_bin": "H2",
+    "target_runtime_seconds": 23047.978826331808,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "SA_Q",
+    "instance_id": "lwe_0077",
+    "octave": 3,
+    "runtime_bin": "H3",
+    "target_runtime_seconds": 48435.633518613955,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "SA_Q",
+    "instance_id": "lwe_0078",
+    "octave": 4,
+    "runtime_bin": "H4",
+    "target_runtime_seconds": 101788.12693411601,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "SA_Q",
+    "instance_id": "lwe_0079",
+    "octave": 5,
+    "runtime_bin": "H5",
+    "target_runtime_seconds": 213909.100224198,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "SA_Q",
+    "instance_id": "lwe_0080",
+    "octave": 6,
+    "runtime_bin": "H6",
+    "target_runtime_seconds": 449532.8142578258,
+    "tier": "hard"
+  },
+  {
+    "cohort": "paper",
+    "family": "SA_SMALL",
+    "instance_id": "lwe_0081",
+    "octave": null,
+    "runtime_bin": "E0",
+    "target_runtime_seconds": 1.8660659830736148,
+    "tier": "easy"
+  },
+  {
+    "cohort": "paper",
+    "family": "SA_SMALL",
+    "instance_id": "lwe_0082",
+    "octave": null,
+    "runtime_bin": "E1",
+    "target_runtime_seconds": 8.574187700290345,
+    "tier": "easy"
+  },
+  {
+    "cohort": "paper",
+    "family": "SA_SMALL",
+    "instance_id": "lwe_0083",
+    "octave": null,
+    "runtime_bin": "E2",
+    "target_runtime_seconds": 39.39662122703732,
+    "tier": "easy"
+  },
+  {
+    "cohort": "paper",
+    "family": "SA_SMALL",
+    "instance_id": "lwe_0084",
+    "octave": null,
+    "runtime_bin": "E3",
+    "target_runtime_seconds": 181.01933598375618,
+    "tier": "easy"
+  },
+  {
+    "cohort": "paper",
+    "family": "SA_SMALL",
+    "instance_id": "lwe_0085",
+    "octave": null,
+    "runtime_bin": "E4",
+    "target_runtime_seconds": 831.7464538687851,
+    "tier": "easy"
+  },
+  {
+    "cohort": "paper",
+    "family": "SA_SMALL",
+    "instance_id": "lwe_0086",
+    "octave": null,
+    "runtime_bin": "E5",
+    "target_runtime_seconds": 3380.666838455617,
+    "tier": "easy"
+  },
+  {
+    "cohort": "ladder",
+    "family": "SA_SMALL",
+    "instance_id": "lwe_0087",
+    "octave": 4,
+    "runtime_bin": "H4",
+    "target_runtime_seconds": 59043.698609234365,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "SA_SMALL",
+    "instance_id": "lwe_0088",
+    "octave": 5,
+    "runtime_bin": "H5",
+    "target_runtime_seconds": 124081.11656858571,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "SA_SMALL",
+    "instance_id": "lwe_0089",
+    "octave": 6,
+    "runtime_bin": "H6",
+    "target_runtime_seconds": 260758.11393189096,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "SA_SMALL",
+    "instance_id": "lwe_0090",
+    "octave": 7,
+    "runtime_bin": "H7",
+    "target_runtime_seconds": 547986.6385932538,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "SA_SMALL",
+    "instance_id": "lwe_0091",
+    "octave": 8,
+    "runtime_bin": "H8",
+    "target_runtime_seconds": 1151601.1967902477,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "SA_SMALL",
+    "instance_id": "lwe_0092",
+    "octave": 9,
+    "runtime_bin": "H9",
+    "target_runtime_seconds": 2420105.2052166904,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "SA_SMALL",
+    "instance_id": "lwe_0093",
+    "octave": 0,
+    "runtime_bin": "H0",
+    "target_runtime_seconds": 4966.682833243458,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "SA_SMALL",
+    "instance_id": "lwe_0094",
+    "octave": 1,
+    "runtime_bin": "H1",
+    "target_runtime_seconds": 10437.549918231087,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "SA_SMALL",
+    "instance_id": "lwe_0095",
+    "octave": 2,
+    "runtime_bin": "H2",
+    "target_runtime_seconds": 21934.64973571137,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "SA_SMALL",
+    "instance_id": "lwe_0096",
+    "octave": 3,
+    "runtime_bin": "H3",
+    "target_runtime_seconds": 46095.957652663616,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "SA_SMALL",
+    "instance_id": "lwe_0097",
+    "octave": 4,
+    "runtime_bin": "H4",
+    "target_runtime_seconds": 96871.26703722791,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "SA_SMALL",
+    "instance_id": "lwe_0098",
+    "octave": 5,
+    "runtime_bin": "H5",
+    "target_runtime_seconds": 203576.25386823202,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "SA_SMALL",
+    "instance_id": "lwe_0099",
+    "octave": 6,
+    "runtime_bin": "H6",
+    "target_runtime_seconds": 427818.200448396,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "SA_SMALL",
+    "instance_id": "lwe_0100",
+    "octave": 7,
+    "runtime_bin": "H7",
+    "target_runtime_seconds": 899065.6285156516,
+    "tier": "hard"
+  },
+  {
+    "cohort": "paper",
+    "family": "DA_BIN",
+    "instance_id": "lwe_0101",
+    "octave": null,
+    "runtime_bin": "E0",
+    "target_runtime_seconds": 2.1435469250725863,
+    "tier": "easy"
+  },
+  {
+    "cohort": "paper",
+    "family": "DA_BIN",
+    "instance_id": "lwe_0102",
+    "octave": null,
+    "runtime_bin": "E1",
+    "target_runtime_seconds": 9.84915530675933,
+    "tier": "easy"
+  },
+  {
+    "cohort": "paper",
+    "family": "DA_BIN",
+    "instance_id": "lwe_0103",
+    "octave": null,
+    "runtime_bin": "E2",
+    "target_runtime_seconds": 45.254833995939045,
+    "tier": "easy"
+  },
+  {
+    "cohort": "paper",
+    "family": "DA_BIN",
+    "instance_id": "lwe_0104",
+    "octave": null,
+    "runtime_bin": "E3",
+    "target_runtime_seconds": 207.93661346719628,
+    "tier": "easy"
+  },
+  {
+    "cohort": "paper",
+    "family": "DA_BIN",
+    "instance_id": "lwe_0105",
+    "octave": null,
+    "runtime_bin": "E4",
+    "target_runtime_seconds": 955.4257833336908,
+    "tier": "easy"
+  },
+  {
+    "cohort": "paper",
+    "family": "DA_BIN",
+    "instance_id": "lwe_0106",
+    "octave": null,
+    "runtime_bin": "E5",
+    "target_runtime_seconds": 1090.4357560664128,
+    "tier": "easy"
+  },
+  {
+    "cohort": "ladder",
+    "family": "DA_BIN",
+    "instance_id": "lwe_0107",
+    "octave": 5,
+    "runtime_bin": "H5",
+    "target_runtime_seconds": 118087.39721846873,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "DA_BIN",
+    "instance_id": "lwe_0108",
+    "octave": 6,
+    "runtime_bin": "H6",
+    "target_runtime_seconds": 248162.23313717142,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "DA_BIN",
+    "instance_id": "lwe_0109",
+    "octave": 7,
+    "runtime_bin": "H7",
+    "target_runtime_seconds": 521516.2278637819,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "DA_BIN",
+    "instance_id": "lwe_0110",
+    "octave": 8,
+    "runtime_bin": "H8",
+    "target_runtime_seconds": 1095973.2771865076,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "DA_BIN",
+    "instance_id": "lwe_0111",
+    "octave": 9,
+    "runtime_bin": "H9",
+    "target_runtime_seconds": 2303202.3935804954,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "DA_BIN",
+    "instance_id": "lwe_0112",
+    "octave": 0,
+    "runtime_bin": "H0",
+    "target_runtime_seconds": 4726.76797893885,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "DA_BIN",
+    "instance_id": "lwe_0113",
+    "octave": 1,
+    "runtime_bin": "H1",
+    "target_runtime_seconds": 9933.365666486916,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "DA_BIN",
+    "instance_id": "lwe_0114",
+    "octave": 2,
+    "runtime_bin": "H2",
+    "target_runtime_seconds": 20875.099836462174,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "DA_BIN",
+    "instance_id": "lwe_0115",
+    "octave": 3,
+    "runtime_bin": "H3",
+    "target_runtime_seconds": 43869.29947142274,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "DA_BIN",
+    "instance_id": "lwe_0116",
+    "octave": 4,
+    "runtime_bin": "H4",
+    "target_runtime_seconds": 92191.91530532723,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "DA_BIN",
+    "instance_id": "lwe_0117",
+    "octave": 5,
+    "runtime_bin": "H5",
+    "target_runtime_seconds": 193742.53407445582,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "DA_BIN",
+    "instance_id": "lwe_0118",
+    "octave": 6,
+    "runtime_bin": "H6",
+    "target_runtime_seconds": 407152.50773646403,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "DA_BIN",
+    "instance_id": "lwe_0119",
+    "octave": 7,
+    "runtime_bin": "H7",
+    "target_runtime_seconds": 855636.400896792,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "DA_BIN",
+    "instance_id": "lwe_0120",
+    "octave": 8,
+    "runtime_bin": "H8",
+    "target_runtime_seconds": 1798131.257031302,
+    "tier": "hard"
+  },
+  {
+    "cohort": "paper",
+    "family": "DA_TER",
+    "instance_id": "lwe_0121",
+    "octave": null,
+    "runtime_bin": "E0",
+    "target_runtime_seconds": 2.4622888266898326,
+    "tier": "easy"
+  },
+  {
+    "cohort": "paper",
+    "family": "DA_TER",
+    "instance_id": "lwe_0122",
+    "octave": null,
+    "runtime_bin": "E1",
+    "target_runtime_seconds": 11.313708498984761,
+    "tier": "easy"
+  },
+  {
+    "cohort": "paper",
+    "family": "DA_TER",
+    "instance_id": "lwe_0123",
+    "octave": null,
+    "runtime_bin": "E2",
+    "target_runtime_seconds": 51.98415336679907,
+    "tier": "easy"
+  },
+  {
+    "cohort": "paper",
+    "family": "DA_TER",
+    "instance_id": "lwe_0124",
+    "octave": null,
+    "runtime_bin": "E3",
+    "target_runtime_seconds": 238.8564458334227,
+    "tier": "easy"
+  },
+  {
+    "cohort": "paper",
+    "family": "DA_TER",
+    "instance_id": "lwe_0125",
+    "octave": null,
+    "runtime_bin": "E4",
+    "target_runtime_seconds": 274.37400640929104,
+    "tier": "easy"
+  },
+  {
+    "cohort": "paper",
+    "family": "DA_TER",
+    "instance_id": "lwe_0126",
+    "octave": null,
+    "runtime_bin": "E5",
+    "target_runtime_seconds": 1236.5177024353125,
+    "tier": "easy"
+  },
+  {
+    "cohort": "ladder",
+    "family": "DA_TER",
+    "instance_id": "lwe_0127",
+    "octave": 6,
+    "runtime_bin": "H6",
+    "target_runtime_seconds": 236174.79443693746,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "DA_TER",
+    "instance_id": "lwe_0128",
+    "octave": 7,
+    "runtime_bin": "H7",
+    "target_runtime_seconds": 496324.46627434285,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "DA_TER",
+    "instance_id": "lwe_0129",
+    "octave": 8,
+    "runtime_bin": "H8",
+    "target_runtime_seconds": 1043032.4557275638,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "DA_TER",
+    "instance_id": "lwe_0130",
+    "octave": 9,
+    "runtime_bin": "H9",
+    "target_runtime_seconds": 2191946.554373015,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "DA_TER",
+    "instance_id": "lwe_0131",
+    "octave": 0,
+    "runtime_bin": "H0",
+    "target_runtime_seconds": 4498.442174961906,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "DA_TER",
+    "instance_id": "lwe_0132",
+    "octave": 1,
+    "runtime_bin": "H1",
+    "target_runtime_seconds": 9453.5359578777,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "DA_TER",
+    "instance_id": "lwe_0133",
+    "octave": 2,
+    "runtime_bin": "H2",
+    "target_runtime_seconds": 19866.73133297383,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "DA_TER",
+    "instance_id": "lwe_0134",
+    "octave": 3,
+    "runtime_bin": "H3",
+    "target_runtime_seconds": 41750.19967292435,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "DA_TER",
+    "instance_id": "lwe_0135",
+    "octave": 4,
+    "runtime_bin": "H4",
+    "target_runtime_seconds": 87738.59894284543,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "DA_TER",
+    "instance_id": "lwe_0136",
+    "octave": 5,
+    "runtime_bin": "H5",
+    "target_runtime_seconds": 184383.83061065446,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "DA_TER",
+    "instance_id": "lwe_0137",
+    "octave": 6,
+    "runtime_bin": "H6",
+    "target_runtime_seconds": 387485.06814891164,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "DA_TER",
+    "instance_id": "lwe_0138",
+    "octave": 7,
+    "runtime_bin": "H7",
+    "target_runtime_seconds": 814305.0154729281,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "DA_TER",
+    "instance_id": "lwe_0139",
+    "octave": 8,
+    "runtime_bin": "H8",
+    "target_runtime_seconds": 1711272.801793583,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "DA_TER",
+    "instance_id": "lwe_0140",
+    "octave": 9,
+    "runtime_bin": "H9",
+    "target_runtime_seconds": 3596262.514062604,
+    "tier": "hard"
+  },
+  {
+    "cohort": "paper",
+    "family": "MIX_Q_SPARSE",
+    "instance_id": "lwe_0141",
+    "octave": null,
+    "runtime_bin": "E0",
+    "target_runtime_seconds": 2.8284271247461903,
+    "tier": "easy"
+  },
+  {
+    "cohort": "paper",
+    "family": "MIX_Q_SPARSE",
+    "instance_id": "lwe_0142",
+    "octave": null,
+    "runtime_bin": "E1",
+    "target_runtime_seconds": 12.996038341699768,
+    "tier": "easy"
+  },
+  {
+    "cohort": "paper",
+    "family": "MIX_Q_SPARSE",
+    "instance_id": "lwe_0143",
+    "octave": null,
+    "runtime_bin": "E2",
+    "target_runtime_seconds": 59.714111458355674,
+    "tier": "easy"
+  },
+  {
+    "cohort": "paper",
+    "family": "MIX_Q_SPARSE",
+    "instance_id": "lwe_0144",
+    "octave": null,
+    "runtime_bin": "E3",
+    "target_runtime_seconds": 68.59350160232276,
+    "tier": "easy"
+  },
+  {
+    "cohort": "paper",
+    "family": "MIX_Q_SPARSE",
+    "instance_id": "lwe_0145",
+    "octave": null,
+    "runtime_bin": "E4",
+    "target_runtime_seconds": 315.1729698162986,
+    "tier": "easy"
+  },
+  {
+    "cohort": "paper",
+    "family": "MIX_Q_SPARSE",
+    "instance_id": "lwe_0146",
+    "octave": null,
+    "runtime_bin": "E5",
+    "target_runtime_seconds": 1402.1697472132253,
+    "tier": "easy"
+  },
+  {
+    "cohort": "ladder",
+    "family": "MIX_Q_SPARSE",
+    "instance_id": "lwe_0147",
+    "octave": 7,
+    "runtime_bin": "H7",
+    "target_runtime_seconds": 472349.5888738749,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "MIX_Q_SPARSE",
+    "instance_id": "lwe_0148",
+    "octave": 8,
+    "runtime_bin": "H8",
+    "target_runtime_seconds": 992648.9325486864,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "MIX_Q_SPARSE",
+    "instance_id": "lwe_0149",
+    "octave": 9,
+    "runtime_bin": "H9",
+    "target_runtime_seconds": 2086064.9114551276,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "MIX_Q_SPARSE",
+    "instance_id": "lwe_0150",
+    "octave": 0,
+    "runtime_bin": "H0",
+    "target_runtime_seconds": 4281.145614009795,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "MIX_Q_SPARSE",
+    "instance_id": "lwe_0151",
+    "octave": 1,
+    "runtime_bin": "H1",
+    "target_runtime_seconds": 8996.884349923812,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "MIX_Q_SPARSE",
+    "instance_id": "lwe_0152",
+    "octave": 2,
+    "runtime_bin": "H2",
+    "target_runtime_seconds": 18907.0719157554,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "MIX_Q_SPARSE",
+    "instance_id": "lwe_0153",
+    "octave": 3,
+    "runtime_bin": "H3",
+    "target_runtime_seconds": 39733.46266594766,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "MIX_Q_SPARSE",
+    "instance_id": "lwe_0154",
+    "octave": 4,
+    "runtime_bin": "H4",
+    "target_runtime_seconds": 83500.3993458487,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "MIX_Q_SPARSE",
+    "instance_id": "lwe_0155",
+    "octave": 5,
+    "runtime_bin": "H5",
+    "target_runtime_seconds": 175477.19788569087,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "MIX_Q_SPARSE",
+    "instance_id": "lwe_0156",
+    "octave": 6,
+    "runtime_bin": "H6",
+    "target_runtime_seconds": 368767.6612213089,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "MIX_Q_SPARSE",
+    "instance_id": "lwe_0157",
+    "octave": 7,
+    "runtime_bin": "H7",
+    "target_runtime_seconds": 774970.1362978233,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "MIX_Q_SPARSE",
+    "instance_id": "lwe_0158",
+    "octave": 8,
+    "runtime_bin": "H8",
+    "target_runtime_seconds": 1628610.0309458561,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "MIX_Q_SPARSE",
+    "instance_id": "lwe_0159",
+    "octave": 9,
+    "runtime_bin": "H9",
+    "target_runtime_seconds": 3422545.603587166,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "MIX_Q_SPARSE",
+    "instance_id": "lwe_0160",
+    "octave": 0,
+    "runtime_bin": "H0",
+    "target_runtime_seconds": 7023.950222778527,
+    "tier": "hard"
+  },
+  {
+    "cohort": "paper",
+    "family": "MIX_SMALL_SPARSE",
+    "instance_id": "lwe_0161",
+    "octave": null,
+    "runtime_bin": "E0",
+    "target_runtime_seconds": 3.249009585424942,
+    "tier": "easy"
+  },
+  {
+    "cohort": "paper",
+    "family": "MIX_SMALL_SPARSE",
+    "instance_id": "lwe_0162",
+    "octave": null,
+    "runtime_bin": "E1",
+    "target_runtime_seconds": 14.928527864588919,
+    "tier": "easy"
+  },
+  {
+    "cohort": "paper",
+    "family": "MIX_SMALL_SPARSE",
+    "instance_id": "lwe_0163",
+    "octave": null,
+    "runtime_bin": "E2",
+    "target_runtime_seconds": 17.14837540058069,
+    "tier": "easy"
+  },
+  {
+    "cohort": "paper",
+    "family": "MIX_SMALL_SPARSE",
+    "instance_id": "lwe_0164",
+    "octave": null,
+    "runtime_bin": "E3",
+    "target_runtime_seconds": 78.79324245407464,
+    "tier": "easy"
+  },
+  {
+    "cohort": "paper",
+    "family": "MIX_SMALL_SPARSE",
+    "instance_id": "lwe_0165",
+    "octave": null,
+    "runtime_bin": "E4",
+    "target_runtime_seconds": 362.03867196751236,
+    "tier": "easy"
+  },
+  {
+    "cohort": "paper",
+    "family": "MIX_SMALL_SPARSE",
+    "instance_id": "lwe_0166",
+    "octave": null,
+    "runtime_bin": "E5",
+    "target_runtime_seconds": 1590.0136295079478,
+    "tier": "easy"
+  },
+  {
+    "cohort": "ladder",
+    "family": "MIX_SMALL_SPARSE",
+    "instance_id": "lwe_0167",
+    "octave": 8,
+    "runtime_bin": "H8",
+    "target_runtime_seconds": 944699.1777477504,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "MIX_SMALL_SPARSE",
+    "instance_id": "lwe_0168",
+    "octave": 9,
+    "runtime_bin": "H9",
+    "target_runtime_seconds": 1985297.8650973728,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "MIX_SMALL_SPARSE",
+    "instance_id": "lwe_0169",
+    "octave": 0,
+    "runtime_bin": "H0",
+    "target_runtime_seconds": 4074.345530185796,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "MIX_SMALL_SPARSE",
+    "instance_id": "lwe_0170",
+    "octave": 1,
+    "runtime_bin": "H1",
+    "target_runtime_seconds": 8562.29122801959,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "MIX_SMALL_SPARSE",
+    "instance_id": "lwe_0171",
+    "octave": 2,
+    "runtime_bin": "H2",
+    "target_runtime_seconds": 17993.768699847627,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "MIX_SMALL_SPARSE",
+    "instance_id": "lwe_0172",
+    "octave": 3,
+    "runtime_bin": "H3",
+    "target_runtime_seconds": 37814.1438315108,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "MIX_SMALL_SPARSE",
+    "instance_id": "lwe_0173",
+    "octave": 4,
+    "runtime_bin": "H4",
+    "target_runtime_seconds": 79466.92533189533,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "MIX_SMALL_SPARSE",
+    "instance_id": "lwe_0174",
+    "octave": 5,
+    "runtime_bin": "H5",
+    "target_runtime_seconds": 167000.7986916974,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "MIX_SMALL_SPARSE",
+    "instance_id": "lwe_0175",
+    "octave": 6,
+    "runtime_bin": "H6",
+    "target_runtime_seconds": 350954.39577138174,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "MIX_SMALL_SPARSE",
+    "instance_id": "lwe_0176",
+    "octave": 7,
+    "runtime_bin": "H7",
+    "target_runtime_seconds": 737535.3224426178,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "MIX_SMALL_SPARSE",
+    "instance_id": "lwe_0177",
+    "octave": 8,
+    "runtime_bin": "H8",
+    "target_runtime_seconds": 1549940.2725956466,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "MIX_SMALL_SPARSE",
+    "instance_id": "lwe_0178",
+    "octave": 9,
+    "runtime_bin": "H9",
+    "target_runtime_seconds": 3257220.0618917122,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "MIX_SMALL_SPARSE",
+    "instance_id": "lwe_0179",
+    "octave": 0,
+    "runtime_bin": "H0",
+    "target_runtime_seconds": 6684.659382006186,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "MIX_SMALL_SPARSE",
+    "instance_id": "lwe_0180",
+    "octave": 1,
+    "runtime_bin": "H1",
+    "target_runtime_seconds": 14047.900445557056,
+    "tier": "hard"
+  },
+  {
+    "cohort": "paper",
+    "family": "MIX_DENSE_SMALL",
+    "instance_id": "lwe_0181",
+    "octave": null,
+    "runtime_bin": "E0",
+    "target_runtime_seconds": 3.7321319661472296,
+    "tier": "easy"
+  },
+  {
+    "cohort": "paper",
+    "family": "MIX_DENSE_SMALL",
+    "instance_id": "lwe_0182",
+    "octave": null,
+    "runtime_bin": "E1",
+    "target_runtime_seconds": 4.2870938501451725,
+    "tier": "easy"
+  },
+  {
+    "cohort": "paper",
+    "family": "MIX_DENSE_SMALL",
+    "instance_id": "lwe_0183",
+    "octave": null,
+    "runtime_bin": "E2",
+    "target_runtime_seconds": 19.69831061351866,
+    "tier": "easy"
+  },
+  {
+    "cohort": "paper",
+    "family": "MIX_DENSE_SMALL",
+    "instance_id": "lwe_0184",
+    "octave": null,
+    "runtime_bin": "E3",
+    "target_runtime_seconds": 90.50966799187809,
+    "tier": "easy"
+  },
+  {
+    "cohort": "paper",
+    "family": "MIX_DENSE_SMALL",
+    "instance_id": "lwe_0185",
+    "octave": null,
+    "runtime_bin": "E4",
+    "target_runtime_seconds": 415.87322693439256,
+    "tier": "easy"
+  },
+  {
+    "cohort": "paper",
+    "family": "MIX_DENSE_SMALL",
+    "instance_id": "lwe_0186",
+    "octave": null,
+    "runtime_bin": "E5",
+    "target_runtime_seconds": 1803.0223138429958,
+    "tier": "easy"
+  },
+  {
+    "cohort": "ladder",
+    "family": "MIX_DENSE_SMALL",
+    "instance_id": "lwe_0187",
+    "octave": 9,
+    "runtime_bin": "H9",
+    "target_runtime_seconds": 1889398.3554955008,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "MIX_DENSE_SMALL",
+    "instance_id": "lwe_0188",
+    "octave": 0,
+    "runtime_bin": "H0",
+    "target_runtime_seconds": 3877.5348927683044,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "MIX_DENSE_SMALL",
+    "instance_id": "lwe_0189",
+    "octave": 1,
+    "runtime_bin": "H1",
+    "target_runtime_seconds": 8148.691060371592,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "MIX_DENSE_SMALL",
+    "instance_id": "lwe_0190",
+    "octave": 2,
+    "runtime_bin": "H2",
+    "target_runtime_seconds": 17124.58245603918,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "MIX_DENSE_SMALL",
+    "instance_id": "lwe_0191",
+    "octave": 3,
+    "runtime_bin": "H3",
+    "target_runtime_seconds": 35987.537399695255,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "MIX_DENSE_SMALL",
+    "instance_id": "lwe_0192",
+    "octave": 4,
+    "runtime_bin": "H4",
+    "target_runtime_seconds": 75628.28766302162,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "MIX_DENSE_SMALL",
+    "instance_id": "lwe_0193",
+    "octave": 5,
+    "runtime_bin": "H5",
+    "target_runtime_seconds": 158933.85066379065,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "MIX_DENSE_SMALL",
+    "instance_id": "lwe_0194",
+    "octave": 6,
+    "runtime_bin": "H6",
+    "target_runtime_seconds": 334001.5973833948,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "MIX_DENSE_SMALL",
+    "instance_id": "lwe_0195",
+    "octave": 7,
+    "runtime_bin": "H7",
+    "target_runtime_seconds": 701908.7915427635,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "MIX_DENSE_SMALL",
+    "instance_id": "lwe_0196",
+    "octave": 8,
+    "runtime_bin": "H8",
+    "target_runtime_seconds": 1475070.6448852357,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "MIX_DENSE_SMALL",
+    "instance_id": "lwe_0197",
+    "octave": 9,
+    "runtime_bin": "H9",
+    "target_runtime_seconds": 3099880.545191293,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "MIX_DENSE_SMALL",
+    "instance_id": "lwe_0198",
+    "octave": 0,
+    "runtime_bin": "H0",
+    "target_runtime_seconds": 6361.757933382251,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "MIX_DENSE_SMALL",
+    "instance_id": "lwe_0199",
+    "octave": 1,
+    "runtime_bin": "H1",
+    "target_runtime_seconds": 13369.318764012372,
+    "tier": "hard"
+  },
+  {
+    "cohort": "ladder",
+    "family": "MIX_DENSE_SMALL",
+    "instance_id": "lwe_0200",
+    "octave": 2,
+    "runtime_bin": "H2",
+    "target_runtime_seconds": 28095.80089111411,
+    "tier": "hard"
+  }
+]

@@ -345,6 +345,54 @@ def test_exact_weight_secret_has_distinct_exact_support(toy_template) -> None:
     assert validate_secret(generated.instance, generated.private_secret).ok
 
 
+def test_balanced_exact_weight_signed_secret_is_balanced_and_round_trips(
+    toy_template, tmp_path: Path
+) -> None:
+    template = replace(
+        toy_template,
+        n=4,
+        secret_distribution=SecretDistributionSpec(
+            kind="balanced_exact_weight_signed",
+            alphabet=(-1, 1),
+            weight=4,
+            eta=None,
+        ),
+        secret=SecretPredicateSpec(
+            kind="alphabet",
+            alphabet=(-1, 0, 1),
+            min_nonzero=4,
+            max_nonzero=4,
+        ),
+    )
+
+    generated = generate_synthetic_instance(
+        template=template,
+        private_seed=bytes.fromhex("14" * 32),
+    )
+
+    assert generated.private_secret.count(1) == 2
+    assert generated.private_secret.count(-1) == 2
+    assert validate_secret(generated.instance, generated.private_secret).ok
+    public = generated.public_json()
+    assert public["secret_distribution"] == {
+        "kind": "balanced_exact_weight_signed",
+        "alphabet": [-1, 1],
+        "weight": 4,
+        "eta": None,
+    }
+    assert "private_secret" not in public
+    assert not {"private_secret", "planted_secret"} & set(_nested_keys(public))
+
+    catalog_path = tmp_path / "balanced.json"
+    catalog_path.write_text(
+        json.dumps({"schema_version": 1, "instances": [public]}),
+        encoding="utf-8",
+    )
+    round_tripped = Catalog.load(catalog_path).get(template.instance_id)
+    assert round_tripped.secret_distribution == generated.instance.secret_distribution
+    assert round_tripped.secret == generated.instance.secret
+
+
 def test_centered_binomial_secret_uses_declared_eta(toy_template) -> None:
     template = replace(
         toy_template,

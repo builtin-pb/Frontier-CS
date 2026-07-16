@@ -44,6 +44,10 @@ class Catalog:
     def load(cls, path: str | _Path) -> "Catalog":
         return cls(_schema.Catalog.load(path))
 
+    @classmethod
+    def load_fd(cls, descriptor: int, catalog_format: str) -> "Catalog":
+        return cls(_schema.Catalog.load_fd(descriptor, catalog_format))
+
     @property
     def catalog_id(self) -> str:
         return self.__catalog_id

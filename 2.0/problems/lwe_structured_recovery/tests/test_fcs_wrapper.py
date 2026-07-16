@@ -164,7 +164,7 @@ def test_cli_prints_message_to_stderr_and_scores_as_the_final_stdout_line(
     )
 
 
-def test_shell_wrapper_is_strict_and_uses_the_fixed_solution_ledger(
+def test_shell_wrapper_is_strict_and_defaults_to_the_harbor_solution_ledger(
     task_dir: Path,
 ) -> None:
     script = task_dir / "evaluate.sh"
@@ -181,8 +181,94 @@ def test_shell_wrapper_is_strict_and_uses_the_fixed_solution_ledger(
     assert syntax.returncode == 0, syntax.stderr
     assert script.stat().st_mode & 0o111
     assert text.startswith("#!/usr/bin/env bash\nset -euo pipefail\n")
-    assert 'SOLUTION="/work/execution_env/solution_env/solution.json"' in text
-    assert 'python3 "$SCRIPT_DIR/evaluator.py" "$SOLUTION"' in text
+    assert (
+        'SOLUTION="${1:-/work/execution_env/solution_env/solution.json}"' in text
+    )
+    assert 'exec "$PYTHON_BIN" "$SCRIPT_DIR/evaluator.py" "$SOLUTION"' in text
+    assert "Python 3.11 or newer is required" in text
+
+
+def test_shell_wrapper_evaluates_an_explicit_solution_path(task_dir: Path) -> None:
+    env = os.environ.copy()
+    env["FCS_STRUCTURED_LWE_CATALOG"] = str(task_dir / "catalog.synthetic.json")
+
+    completed = subprocess.run(
+        [
+            "bash",
+            str(task_dir / "evaluate.sh"),
+            str(task_dir / "reference.json"),
+        ],
+        cwd=task_dir,
+        env=env,
+        text=True,
+        capture_output=True,
+        timeout=10,
+        check=False,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    assert completed.stdout == "0.000000000000 0.000000000000\n"
+    assert completed.stderr == (
+        "scored solved=0 submitted=0 invalid=0 duplicates=0 conflicts=0 unknown=0\n"
+    )
+
+
+def test_local_setup_installs_python_only_when_missing(
+    task_dir: Path, tmp_path: Path
+) -> None:
+    script = task_dir / "set_up_env.sh"
+    fake_bin = tmp_path / "bin"
+    fake_bin.mkdir()
+    log = tmp_path / "apt.log"
+    fake_apt = fake_bin / "apt-get"
+    fake_apt.write_text(
+        '#!/bin/bash\nprintf \'%s\\n\' "$*" >> "$SETUP_LOG"\n',
+        encoding="utf-8",
+    )
+    fake_apt.chmod(0o755)
+    env = {"PATH": str(fake_bin), "SETUP_LOG": str(log)}
+
+    syntax = subprocess.run(
+        ["/bin/bash", "-n", str(script)],
+        text=True,
+        capture_output=True,
+        timeout=10,
+        check=False,
+    )
+    missing = subprocess.run(
+        ["/bin/bash", str(script)],
+        env=env,
+        text=True,
+        capture_output=True,
+        timeout=10,
+        check=False,
+    )
+
+    assert syntax.returncode == 0, syntax.stderr
+    assert script.stat().st_mode & 0o111
+    assert missing.returncode == 0, missing.stderr
+    assert log.read_text(encoding="utf-8").splitlines() == [
+        "update -qq",
+        "install -y -qq --no-install-recommends python3",
+    ]
+
+    fake_python = fake_bin / "python3"
+    fake_python.write_text("#!/bin/bash\nexit 0\n", encoding="utf-8")
+    fake_python.chmod(0o755)
+    present = subprocess.run(
+        ["/bin/bash", str(script)],
+        env=env,
+        text=True,
+        capture_output=True,
+        timeout=10,
+        check=False,
+    )
+
+    assert present.returncode == 0, present.stderr
+    assert log.read_text(encoding="utf-8").splitlines() == [
+        "update -qq",
+        "install -y -qq --no-install-recommends python3",
+    ]
 
 
 def test_missing_solution_file_returns_a_sanitized_zero_score(
@@ -420,17 +506,26 @@ def test_judge_public_directory_precedes_the_source_tree_catalog(
     ).hexdigest()
 
 
-def test_source_checkout_never_silently_uses_the_synthetic_catalog(
+def test_source_checkout_uses_the_production_catalog_not_the_synthetic_fixture(
     task_dir: Path, task_module_loader, monkeypatch
 ) -> None:
+    production_path = task_dir / "harbor" / "app" / "public" / "catalog.jsonl"
+    synthetic_path = task_dir / "catalog.synthetic.json"
     monkeypatch.delenv("FCS_STRUCTURED_LWE_CATALOG", raising=False)
     monkeypatch.delenv("FRONTIER_PUBLIC_DIR", raising=False)
     module = task_module_loader(
-        task_dir / "evaluator.py", "lwe_evaluator_no_synthetic_fallback"
+        task_dir / "evaluator.py", "lwe_evaluator_source_production_catalog"
     )
 
-    with pytest.raises(FileNotFoundError):
-        module.prepare()
+    prepared = module.prepare()
+
+    assert prepared == {
+        "instance_count": 200,
+        "catalog_id": hashlib.sha256(production_path.read_bytes()).hexdigest(),
+    }
+    assert prepared["catalog_id"] != hashlib.sha256(
+        synthetic_path.read_bytes()
+    ).hexdigest()
 
 
 def test_source_checkout_falls_back_to_the_sibling_public_catalog(

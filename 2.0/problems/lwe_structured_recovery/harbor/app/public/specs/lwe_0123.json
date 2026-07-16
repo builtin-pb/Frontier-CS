@@ -1,0 +1,64 @@
+{
+  "analysis_path": "analyses/lwe_0123.md",
+  "analytical_model": {
+    "assumed_rate_per_second": 4.499147321405776,
+    "baseline_rate_at_n16_per_second": 80.0,
+    "clean_subset_probability": 0.002965712145944694,
+    "formula": "ln(2)/(clean_subset_probability*max(80*(16/n)^1.5,2))",
+    "median_attempts": 233.72031621738904,
+    "minimum_rate_per_second": 2.0,
+    "model_id": "analytical-clean-subset-v2",
+    "predicted_runtime_seconds": 51.947691311508834
+  },
+  "calibration_model_id": "analytical-clean-subset-v2",
+  "calibration_status": "extrapolated",
+  "cohort": "paper",
+  "error": {
+    "max_abs": 256,
+    "max_l1": 3584,
+    "max_l2_squared": 917504,
+    "max_nonzero": 14
+  },
+  "error_distribution": {
+    "bound": 256,
+    "eta": null,
+    "kind": "sparse_bounded",
+    "sigma": null,
+    "weight": 14
+  },
+  "family": "DA_TER",
+  "generator_version": "structured-lwe-corpus-v1",
+  "instance_id": "lwe_0123",
+  "m": 327,
+  "matrix": {
+    "alphabet": [
+      -1,
+      0,
+      1
+    ],
+    "expansion_domain": "FCS-STRUCTURED-LWE-MATRIX-v1",
+    "kind": "small_alphabet",
+    "row_weight": null,
+    "seed_hex": "96bb32f5263559102db15716ef5d1809305806acd1ad0e74067dfc38ab227b16"
+  },
+  "measured_runtime_seconds": null,
+  "n": 109,
+  "octave": null,
+  "predicted_runtime_seconds": 51.947691311508834,
+  "q": 2053,
+  "runtime_bin": "E2",
+  "secret": {
+    "alphabet": [],
+    "kind": "mod_q",
+    "max_nonzero": 109,
+    "min_nonzero": 0
+  },
+  "secret_distribution": {
+    "alphabet": [],
+    "eta": null,
+    "kind": "uniform_mod_q",
+    "weight": null
+  },
+  "target_runtime_seconds": 51.98415336679907,
+  "tier": "easy"
+}

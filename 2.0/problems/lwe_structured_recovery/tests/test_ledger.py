@@ -1313,6 +1313,20 @@ def test_add_solution_cli_updates_ledger_without_echoing_witness(
     }
 
 
+def test_add_solution_exposes_stable_programmatic_merge_boundary(
+    tmp_path: Path, task_dir: Path
+) -> None:
+    path = tmp_path / "solution.json"
+    path.write_bytes(b'{"schema_version":1,"solutions":[]}\n')
+    script = task_dir / "harbor" / "app" / "add_solution.py"
+    namespace = runpy.run_path(str(script), run_name="lwe_add_solution_api_test")
+
+    solved_count = namespace["merge_solution"](path, "a", (1, -2))
+
+    assert solved_count == 1
+    assert dict(load_ledger(path).solutions) == {"a": (1, -2)}
+
+
 def test_add_solution_cli_sanitizes_missing_public_package(
     tmp_path: Path, task_dir: Path
 ) -> None:

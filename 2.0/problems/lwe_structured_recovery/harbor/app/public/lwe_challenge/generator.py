@@ -238,6 +238,27 @@ def _sample_secret(
                 stream.randbelow(len(distribution.alphabet))
             ]
         return tuple(secret)
+    if distribution.kind == "balanced_exact_weight_signed":
+        if (
+            distribution.weight is None
+            or distribution.weight % 2
+            or distribution.alphabet != (-1, 1)
+        ):
+            raise ValueError(
+                "balanced_exact_weight_signed requires alphabet (-1, 1) and even weight"
+            )
+        support = _sample_support(instance.n, distribution.weight, stream)
+        positive_offsets = frozenset(
+            _sample_support(
+                distribution.weight,
+                distribution.weight // 2,
+                stream,
+            )
+        )
+        secret = [0] * instance.n
+        for offset, index in enumerate(support):
+            secret[index] = 1 if offset in positive_offsets else -1
+        return tuple(secret)
     if distribution.kind == "centered_binomial":
         if distribution.eta is None:
             raise ValueError("centered_binomial requires eta")
@@ -375,7 +396,10 @@ def _distribution_checks(
 ) -> bool:
     if instance.secret_distribution.kind == "uniform_mod_q":
         secret_valid = all(0 <= value < instance.q for value in secret)
-    elif instance.secret_distribution.kind == "exact_weight_alphabet":
+    elif instance.secret_distribution.kind in {
+        "exact_weight_alphabet",
+        "balanced_exact_weight_signed",
+    }:
         secret_valid = (
             all(
                 value == 0 or value in instance.secret_distribution.alphabet
@@ -384,6 +408,8 @@ def _distribution_checks(
             and sum(value != 0 for value in secret)
             == instance.secret_distribution.weight
         )
+        if instance.secret_distribution.kind == "balanced_exact_weight_signed":
+            secret_valid = secret_valid and secret.count(1) == secret.count(-1)
     else:
         secret_valid = all(
             value in instance.secret_distribution.alphabet for value in secret

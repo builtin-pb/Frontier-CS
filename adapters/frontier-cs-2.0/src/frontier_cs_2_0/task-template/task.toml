@@ -3,7 +3,7 @@ schema_version = "1.1"
 [task]
 name = "frontier-cs/{task_id}"
 authors = [{{ name = "Frontier-CS Team", email = "frontier-cs@berkeley.edu" }}]
-keywords = ["frontier-cs", "frontier-cs-2.0", "optimization", "geometry"]
+keywords = ["frontier-cs", "frontier-cs-2.0", "optimization", "{tag}"]
 
 [metadata]
 difficulty = "hard"

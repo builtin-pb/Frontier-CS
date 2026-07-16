@@ -54,7 +54,7 @@ _INSTANCE_METHODS = {
 }
 
 
-def test_public_facade_supports_phase3_solver_workflow(catalog_path) -> None:
+def test_public_facade_supports_reference_solver_workflow(catalog_path) -> None:
     catalog = lwe_instance.Catalog.load(catalog_path)
     instance = catalog.get("toy-uniform")
 
@@ -139,7 +139,7 @@ def test_catalog_preserves_order_identity_and_lookup_contract(catalog_path) -> N
 
     assert {
         name for name in dir(catalog) if not name.startswith("_")
-    } == {"catalog_id", "get", "instances", "load"}
+    } == {"catalog_id", "get", "instances", "load", "load_fd"}
     assert catalog.catalog_id == hashlib.sha256(catalog_path.read_bytes()).hexdigest()
     assert tuple(instance.instance_id for instance in catalog.instances) == (
         "toy-uniform",

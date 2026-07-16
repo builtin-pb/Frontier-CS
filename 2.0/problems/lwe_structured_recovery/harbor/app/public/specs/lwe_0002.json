@@ -1,0 +1,65 @@
+{
+  "analysis_path": "analyses/lwe_0002.md",
+  "analytical_model": {
+    "assumed_rate_per_second": 96000.0,
+    "formula": "binomial(n,h)*nonzero_alphabet_size^h/(2.4e+06/n)",
+    "measured_candidate_rate_n_product": 1200000.0,
+    "model_id": "analytical-secret-enumeration-v1",
+    "nonzero_alphabet_size": 1,
+    "predicted_runtime_seconds": 5.007291666666666,
+    "rate_model": "2*measured_candidate_rate_n_product/n",
+    "work_factor": 480700
+  },
+  "calibration_model_id": "analytical-secret-enumeration-v1",
+  "calibration_status": "extrapolated",
+  "cohort": "paper",
+  "error": {
+    "max_abs": 96,
+    "max_l1": 5568,
+    "max_l2_squared": 534528,
+    "max_nonzero": 58
+  },
+  "error_distribution": {
+    "bound": 96,
+    "eta": null,
+    "kind": "bounded_uniform",
+    "sigma": null,
+    "weight": null
+  },
+  "family": "DS_BIN",
+  "generator_version": "structured-lwe-corpus-v1",
+  "instance_id": "lwe_0002",
+  "m": 58,
+  "matrix": {
+    "alphabet": [],
+    "expansion_domain": "FCS-STRUCTURED-LWE-MATRIX-v1",
+    "kind": "uniform",
+    "row_weight": null,
+    "seed_hex": "7eab9c714f98ea529f9d9e0ed0040a04e3676ce10193d588bc1ebd4bad75400b"
+  },
+  "measured_runtime_seconds": null,
+  "n": 25,
+  "octave": null,
+  "predicted_runtime_seconds": 5.007291666666666,
+  "q": 769,
+  "runtime_bin": "E1",
+  "secret": {
+    "alphabet": [
+      0,
+      1
+    ],
+    "kind": "alphabet",
+    "max_nonzero": 7,
+    "min_nonzero": 7
+  },
+  "secret_distribution": {
+    "alphabet": [
+      1
+    ],
+    "eta": null,
+    "kind": "exact_weight_alphabet",
+    "weight": 7
+  },
+  "target_runtime_seconds": 4.924577653379665,
+  "tier": "easy"
+}

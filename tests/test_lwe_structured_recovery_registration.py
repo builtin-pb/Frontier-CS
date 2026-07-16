@@ -1,8 +1,20 @@
 from pathlib import Path
+import sys
+import tomllib
 
 import yaml
 
 from frontier_cs.config import get_problem_extension
+
+
+def _load_frontier_cs_20_adapter(root: Path):
+    adapter_src = root / "adapters" / "frontier-cs-2.0" / "src"
+    sys.path.insert(0, str(adapter_src))
+    try:
+        from frontier_cs_2_0.adapter import FrontierCS20Adapter
+    finally:
+        assert sys.path.pop(0) == str(adapter_src)
+    return FrontierCS20Adapter
 
 
 def test_lwe_structured_recovery_uses_json_reference() -> None:
@@ -30,6 +42,9 @@ def test_lwe_structured_recovery_readme_publishes_complete_agent_contract() -> N
         "/app/solution.json",
         "bash /app/submit.sh",
         "/app/public/catalog.jsonl",
+        "/app/LITERATURE.md",
+        "/app/analyses/",
+        "/app/tools/solvers/",
         "public/lwe_instance.py",
         "from lwe_instance import Catalog",
         '"schema_version": 1',
@@ -89,12 +104,16 @@ def test_lwe_structured_recovery_readme_publishes_complete_agent_contract() -> N
         "ledger admissibility is a separate check",
         "secret_alphabet is the acceptance alphabet",
         (
-            "exact_weight_alphabet generation alphabet is secret_alphabet "
-            "with zero removed"
+            "`exact_weight_alphabet` generation alphabet is "
+            "`secret_alphabet` with zero removed"
         ),
         (
-            "iid_alphabet and centered_binomial generation and acceptance "
-            "alphabets coincide"
+            "`balanced_exact_weight_signed` plant specifically uses "
+            "`{-1,1}` on its support"
+        ),
+        (
+            "`iid_alphabet` and `centered_binomial` generation and "
+            "acceptance alphabets coincide"
         ),
         "Ubuntu 24.04",
         "Python 3.12",
@@ -168,4 +187,46 @@ def test_lwe_structured_recovery_runtime_description_matches_image() -> None:
     assert config["runtime"]["environment"] == (
         "Public structured-LWE instances; Python 3.12 helper library; "
         "CPU only"
+    )
+
+
+def test_lwe_structured_recovery_generates_complete_harbor_package(
+    tmp_path: Path,
+) -> None:
+    root = Path(__file__).parents[1]
+    adapter = _load_frontier_cs_20_adapter(root)
+    generated = adapter(
+        root,
+        tmp_path / "generated",
+        task_ids=["lwe_structured_recovery"],
+    ).run()
+
+    assert len(generated) == 1
+    task = generated[0]
+    source_app = root / "2.0/problems/lwe_structured_recovery/harbor/app"
+    packaged_app = task / "environment" / "harbor_app"
+    task_config = tomllib.loads(
+        task.joinpath("task.toml").read_text(encoding="utf-8")
+    )
+    assert "security" in task_config["task"]["keywords"]
+    for relative in (
+        Path("public/catalog.jsonl"),
+        Path("public/catalog.sha256"),
+        Path("LITERATURE.md"),
+        Path("solution.json"),
+    ):
+        assert packaged_app.joinpath(relative).read_bytes() == (
+            source_app.joinpath(relative).read_bytes()
+        )
+    assert len(list(packaged_app.joinpath("analyses").glob("lwe_*.md"))) == 200
+    assert len(list(packaged_app.joinpath("public/specs").glob("lwe_*.json"))) == 200
+    judge = task.joinpath("environment/Dockerfile.judge").read_text(
+        encoding="utf-8"
+    )
+    assert "COPY harbor_app/public/ /judge/public/" in judge
+    assert "ENV FRONTIER_PUBLIC_DIR=/judge/public" in judge
+    assert "COPY harbor_app/ /judge/" not in judge
+    assert not any(path.name == "__pycache__" for path in packaged_app.rglob("*"))
+    assert not any(
+        path.suffix in {".pyc", ".pyo"} for path in packaged_app.rglob("*")
     )

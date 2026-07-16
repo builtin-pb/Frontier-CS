@@ -243,9 +243,14 @@ def _snapshot_public_directory(
     """Copy a pinned public directory into a private descriptor-relative tree."""
     directory_before = os.fstat(source_fd)
     try:
-        names = sorted(os.listdir(source_fd))
+        all_names = sorted(os.listdir(source_fd))
     except OSError as exc:
         raise ValueError("public assets changed during snapshot") from exc
+    names = [
+        name
+        for name in all_names
+        if name != "__pycache__" and not name.endswith((".pyc", ".pyo"))
+    ]
 
     source_entries: dict[str, os.stat_result] = {}
     for name in names:
@@ -382,10 +387,10 @@ def _snapshot_public_directory(
             os.close(child_source_fd)
 
     try:
-        names_after = sorted(os.listdir(source_fd))
+        all_names_after = sorted(os.listdir(source_fd))
     except OSError as exc:
         raise ValueError("public assets changed during snapshot") from exc
-    if names_after != names:
+    if all_names_after != all_names:
         raise ValueError("public assets changed during snapshot")
     for name, before in source_entries.items():
         try:
@@ -764,7 +769,7 @@ def _root_app_copy_ignore(
     exclude_input: bool,
     exclude_public: bool,
 ):
-    """Ignore opt-in roots only at harbor/app, never recursively."""
+    """Ignore opt-in roots at harbor/app and bytecode at every depth."""
     excluded = {
         name
         for name, enabled in (
@@ -775,11 +780,16 @@ def _root_app_copy_ignore(
     }
 
     def ignore(directory: str, names: list[str]) -> set[str]:
-        if Path(directory) != harbor_app_dir:
-            return set()
-        return excluded.intersection(names)
+        ignored = {
+            name
+            for name in names
+            if name == "__pycache__" or name.endswith((".pyc", ".pyo"))
+        }
+        if Path(directory) == harbor_app_dir:
+            ignored.update(excluded.intersection(names))
+        return ignored
 
-    return ignore if excluded else None
+    return ignore
 
 
 def _agent_pip_package_names(

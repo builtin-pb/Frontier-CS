@@ -33,7 +33,13 @@ _MATRIX_KINDS = frozenset(
     {"uniform", "small_alphabet", "sparse_uniform", "sparse_small_alphabet"}
 )
 _SECRET_DISTRIBUTION_KINDS = frozenset(
-    {"uniform_mod_q", "iid_alphabet", "exact_weight_alphabet", "centered_binomial"}
+    {
+        "uniform_mod_q",
+        "iid_alphabet",
+        "exact_weight_alphabet",
+        "balanced_exact_weight_signed",
+        "centered_binomial",
+    }
 )
 _SECRET_PREDICATE_KINDS = frozenset({"alphabet", "mod_q"})
 _ERROR_DISTRIBUTION_KINDS = frozenset(
@@ -128,6 +134,7 @@ class SecretDistributionSpec:
         "uniform_mod_q",
         "iid_alphabet",
         "exact_weight_alphabet",
+        "balanced_exact_weight_signed",
         "centered_binomial",
     ]
     alphabet: tuple[int, ...]
@@ -224,17 +231,36 @@ class Catalog:
     def load(cls, path: str | Path) -> Catalog:
         catalog_path = Path(path)
         raw_bytes = _read_regular_catalog(catalog_path)
-        if len(raw_bytes) > MAX_CATALOG_BYTES:
-            raise ValueError("catalog exceeds the 64 MiB byte limit")
-
         if catalog_path.suffix == ".json":
-            schema_version, records = _load_json_records(raw_bytes)
-            require_increasing_ids = False
+            catalog_format = "json"
         elif catalog_path.suffix == ".jsonl":
-            schema_version, records = _load_jsonl_records(raw_bytes)
-            require_increasing_ids = True
+            catalog_format = "jsonl"
         else:
             raise ValueError("catalog path must end in .json or .jsonl")
+        return cls._load_bytes(raw_bytes, catalog_format)
+
+    @classmethod
+    def load_fd(cls, descriptor: int, catalog_format: Literal["json", "jsonl"]) -> Catalog:
+        """Load the exact already-open regular file using an explicit wire format."""
+
+        if type(descriptor) is not int or descriptor < 0:
+            raise ValueError("catalog descriptor must be a non-negative integer")
+        if catalog_format not in {"json", "jsonl"}:
+            raise ValueError("catalog format must be exactly json or jsonl")
+        return cls._load_bytes(_read_regular_catalog_fd(descriptor), catalog_format)
+
+    @classmethod
+    def _load_bytes(
+        cls, raw_bytes: bytes, catalog_format: Literal["json", "jsonl"]
+    ) -> Catalog:
+        if len(raw_bytes) > MAX_CATALOG_BYTES:
+            raise ValueError("catalog exceeds the 64 MiB byte limit")
+        if catalog_format == "json":
+            schema_version, records = _load_json_records(raw_bytes)
+            require_increasing_ids = False
+        else:
+            schema_version, records = _load_jsonl_records(raw_bytes)
+            require_increasing_ids = True
 
         raw_ids = tuple(_record_instance_id(record) for record in records)
         if len(raw_ids) != len(set(raw_ids)):
@@ -296,6 +322,38 @@ def _read_regular_catalog(path: Path) -> bytes:
         return bytes(data)
     finally:
         os.close(fd)
+
+
+def _read_regular_catalog_fd(descriptor: int) -> bytes:
+    try:
+        before = os.fstat(descriptor)
+    except OSError as exc:
+        raise ValueError("catalog descriptor is not open") from exc
+    if not stat.S_ISREG(before.st_mode):
+        raise ValueError("catalog descriptor must refer to a regular file")
+    if before.st_size > MAX_CATALOG_BYTES:
+        raise ValueError("catalog exceeds the 64 MiB byte limit")
+    data = bytearray()
+    offset = 0
+    while offset < before.st_size:
+        try:
+            chunk = os.pread(descriptor, min(1024 * 1024, before.st_size - offset), offset)
+        except OSError as exc:
+            raise ValueError("catalog descriptor cannot be read") from exc
+        if not chunk:
+            raise ValueError("catalog descriptor was truncated")
+        data.extend(chunk)
+        offset += len(chunk)
+    try:
+        after = os.fstat(descriptor)
+    except OSError as exc:
+        raise ValueError("catalog descriptor changed while reading") from exc
+    if (
+        (after.st_dev, after.st_ino, after.st_size, after.st_mtime_ns)
+        != (before.st_dev, before.st_ino, before.st_size, before.st_mtime_ns)
+    ):
+        raise ValueError("catalog descriptor changed while reading")
+    return bytes(data)
 
 
 def compute_instance_digest(record: Mapping[str, object]) -> str:
@@ -550,8 +608,16 @@ def _parse_secret_specs(
             raise ValueError("secret distribution and predicate alphabets must match")
         if weight is not None or eta is not None:
             raise ValueError("iid_alphabet must not set secret weight or eta")
-    elif distribution_kind == "exact_weight_alphabet":
-        if not distribution_alphabet or 0 in distribution_alphabet:
+    elif distribution_kind in {
+        "exact_weight_alphabet",
+        "balanced_exact_weight_signed",
+    }:
+        if distribution_kind == "balanced_exact_weight_signed":
+            if distribution_alphabet != (-1, 1):
+                raise ValueError(
+                    "balanced_exact_weight_signed alphabet must be exactly [-1, 1]"
+                )
+        elif not distribution_alphabet or 0 in distribution_alphabet:
             raise ValueError(
                 "exact_weight_alphabet requires a nonempty alphabet excluding zero"
             )
@@ -562,8 +628,12 @@ def _parse_secret_specs(
             )
         if weight is None or weight != min_nonzero or weight != max_nonzero:
             raise ValueError("exact secret weight must equal both predicate bounds")
+        if distribution_kind == "balanced_exact_weight_signed" and weight % 2:
+            raise ValueError(
+                "balanced_exact_weight_signed requires an even weight"
+            )
         if eta is not None:
-            raise ValueError("exact_weight_alphabet must not set secret eta")
+            raise ValueError(f"{distribution_kind} must not set secret eta")
     else:
         if eta is None or not 1 <= eta <= (q - 1) // 2:
             raise ValueError(

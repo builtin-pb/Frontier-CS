@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+from collections.abc import Sequence
 from pathlib import Path
 from typing import NoReturn
 
@@ -21,6 +22,22 @@ def _load_ledger_module():
 
 if __name__ != "__main__":
     ledger = _load_ledger_module()
+
+
+def merge_solution(
+    ledger_path: str | Path,
+    instance_id: str,
+    secret: Sequence[int],
+) -> int:
+    """Merge one new witness through the canonical locked transaction."""
+
+    updated = ledger.merge_witness_transaction(
+        ledger_path,
+        instance_id=instance_id,
+        secret=secret,
+        replace=False,
+    )
+    return len(updated.solutions)
 
 
 class _SanitizedArgumentParser(argparse.ArgumentParser):
@@ -51,16 +68,20 @@ def main() -> int:
         parser.error("SECRET must be a comma-separated integer vector")
 
     try:
-        updated = ledger.merge_witness_transaction(
-            args.ledger,
-            instance_id=args.instance_id,
-            secret=secret,
-            replace=args.replace,
-        )
+        if args.replace:
+            updated = ledger.merge_witness_transaction(
+                args.ledger,
+                instance_id=args.instance_id,
+                secret=secret,
+                replace=True,
+            )
+            solved_count = len(updated.solutions)
+        else:
+            solved_count = merge_solution(args.ledger, args.instance_id, secret)
     except (OSError, TypeError, ValueError):
         parser.exit(2, "error: unable to update ledger\n")
 
-    print(len(updated.solutions))
+    print(solved_count)
     return 0
 
 
