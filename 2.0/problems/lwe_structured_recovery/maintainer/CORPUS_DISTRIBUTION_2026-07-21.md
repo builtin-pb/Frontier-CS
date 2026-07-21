@@ -55,6 +55,11 @@ receipts against the regenerated catalog, while two adjacent records censored
 under short caps.  These probes are only spot checks; they do not replace a
 full calibration campaign.
 
+The first expanded current-catalog pass is
+`analyses/current_e0_probe_runs.jsonl`: all ten hidden E0 records have fresh
+witness-free success receipts.  Nine solved under an 8-second cap; the
+`MIX_DENSE_SMALL` record solved under a 32-second rerun with a different seed.
+
 ## Next iteration
 
 Before claiming current-catalog measured easy coverage, rerun the reference
