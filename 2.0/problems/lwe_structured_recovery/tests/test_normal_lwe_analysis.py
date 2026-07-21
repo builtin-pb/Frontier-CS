@@ -15,7 +15,7 @@ CATALOG_PATH = APP_DIR / "public" / "catalog.jsonl"
 NORMAL_LWE_PATH = MAINTAINER_DIR / "analyses" / "normal_lwe.jsonl"
 
 CATALOG_SHA256 = (
-    "66c3a9a22200087206891cc2842b8ec8e88a67e0ec8479ae6cfc905ef06944b6"
+    "379fc96637a0b5bb5dfdc10de0605a0922f223ba5544f8f6b48f67c3f8b8bcb6"
 )
 SOURCE_COMMIT = "3e48ef421ec256afddb3e7d2249a77eab6e9ba12"
 SOURCE_REPOSITORY = "https://github.com/malb/lattice-estimator"

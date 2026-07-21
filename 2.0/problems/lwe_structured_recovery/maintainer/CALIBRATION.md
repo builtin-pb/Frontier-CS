@@ -5,11 +5,18 @@ easy ladder.  It is evidence for parameter selection, not a hardness claim and
 not a complete E0--E5 benchmark.  Timings vary by host; consequently the public
 specifications retain `calibration_status="extrapolated"` and
 `measured_runtime_seconds=null`.
+
+The campaign was run before the 2026-07-21 fresh-witness regeneration.  The
+receipts below remain honest parameter-level calibration evidence, but they are
+not exact current-catalog solve receipts unless rerun against the current
+catalog.
+
 The compact, witness-free receipts for the selected easy-family E0--E2 runs
 and the final MIX_Q alternative screens are in
 `analyses/calibration_runs.jsonl`; recovered vectors remain private.
 
-- Catalog SHA-256: `66c3a9a22200087206891cc2842b8ec8e88a67e0ec8479ae6cfc905ef06944b6`
+- Current catalog SHA-256: `379fc96637a0b5bb5dfdc10de0605a0922f223ba5544f8f6b48f67c3f8b8bcb6`
+- Calibration-run catalog SHA-256: `66c3a9a22200087206891cc2842b8ec8e88a67e0ec8479ae6cfc905ef06944b6`
 - Host: MacBook Pro `Mac17,2`, Apple M5 (10 cores), 16 GB RAM,
   `arm64` macOS 26.4
 - Execution: one solver process, one worker, no constant-factor or parallel

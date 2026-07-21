@@ -15,7 +15,10 @@ APP_DIR = TASK_DIR / "harbor" / "app"
 MAINTAINER_DIR = TASK_DIR / "maintainer"
 CATALOG_PATH = APP_DIR / "public" / "catalog.jsonl"
 RECEIPTS_PATH = MAINTAINER_DIR / "analyses" / "calibration_runs.jsonl"
-CATALOG_SHA256 = (
+CURRENT_CATALOG_SHA256 = (
+    "379fc96637a0b5bb5dfdc10de0605a0922f223ba5544f8f6b48f67c3f8b8bcb6"
+)
+CALIBRATION_CATALOG_SHA256 = (
     "66c3a9a22200087206891cc2842b8ec8e88a67e0ec8479ae6cfc905ef06944b6"
 )
 SPARSE_SECRET_REVISION = (
@@ -33,21 +36,22 @@ def _jsonl(path: Path) -> list[dict[str, object]]:
     return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
 
 
-def test_final_calibration_receipts_are_canonical_and_bound() -> None:
+def test_final_calibration_receipts_are_canonical_and_historical() -> None:
     raw_lines = RECEIPTS_PATH.read_text(encoding="utf-8").splitlines()
     receipts = [json.loads(line) for line in raw_lines]
-    catalog = {row["instance_id"]: row for row in _jsonl(CATALOG_PATH)}
 
     assert len(receipts) == 37
-    assert hashlib.sha256(CATALOG_PATH.read_bytes()).hexdigest() == CATALOG_SHA256
+    assert hashlib.sha256(CATALOG_PATH.read_bytes()).hexdigest() == (
+        CURRENT_CATALOG_SHA256
+    )
     assert raw_lines == [
         json.dumps(row, allow_nan=False, sort_keys=True, separators=(",", ":"))
         for row in receipts
     ]
     for receipt in receipts:
-        instance_id = receipt["instance_id"]
-        assert receipt["catalog_sha256"] == CATALOG_SHA256
-        assert receipt["instance_digest"] == catalog[instance_id]["instance_digest"]
+        assert receipt["catalog_sha256"] == CALIBRATION_CATALOG_SHA256
+        assert isinstance(receipt["instance_digest"], str)
+        assert len(receipt["instance_digest"]) == 64
         assert receipt["threads"] == 1
         assert isinstance(receipt["seed"], int)
         assert "secret" not in receipt

@@ -307,7 +307,14 @@ def _runtime_bounds_seconds(runtime_bin: str) -> tuple[float, float]:
 
 
 def build_slots() -> list[dict[str, object]]:
-    """Return the stable 10-family, 200-instance public slot allocation."""
+    """Return the stable 10-family, 200-instance hidden slot allocation.
+
+    Participant artifacts deliberately omit these labels.  Maintainers use the
+    ``band`` field for corpus-level balancing after the 2026-07 reanalysis:
+    60 easy records, 84 middle records (H0--H5), and 56 stretch records
+    (H6--H9).  The middle/stretch split is derived from the selected hidden
+    runtime bin, not from public instance IDs.
+    """
 
     slots: list[dict[str, object]] = []
     next_id = 1
@@ -319,6 +326,7 @@ def build_slots() -> list[dict[str, object]]:
                     "family": family,
                     "tier": "easy",
                     "cohort": "paper",
+                    "band": "easy",
                     "runtime_bin": f"E{easy_index}",
                     "octave": None,
                     "target_runtime_seconds": _easy_target_seconds(
@@ -329,12 +337,14 @@ def build_slots() -> list[dict[str, object]]:
             next_id += 1
         for hard_index in range(14):
             octave = _hard_octave(family_index, hard_index)
+            band = "middle" if octave <= 5 else "stretch"
             slots.append(
                 {
                     "instance_id": f"lwe_{next_id:04d}",
                     "family": family,
                     "tier": "hard",
                     "cohort": "ladder",
+                    "band": band,
                     "runtime_bin": f"H{octave}",
                     "octave": octave,
                     "target_runtime_seconds": 3600.0

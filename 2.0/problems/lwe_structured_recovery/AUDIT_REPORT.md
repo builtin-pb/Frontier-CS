@@ -55,10 +55,11 @@ byte-identical public catalog assets.
 ## Corpus and estimator review
 
 The design allocates exactly 200 instances: 20 in each of ten structured
-families, with 60 easy slots across six sub-hour bins and 140 hard slots across
-ten logarithmic octaves through 1024 hours.  The family definitions cover matrix
-and secret sparsity and binary/ternary/small alphabets, while retaining `n`,
-`m`, `q`, and error distribution as independent knobs.
+families, with 60 easy slots across six sub-hour bins plus a hidden hard split
+of 84 middle slots and 56 stretch slots across ten logarithmic octaves through
+1024 hours.  The family definitions cover matrix and secret sparsity and
+binary/ternary/small alphabets, while retaining `n`, `m`, `q`, and error
+distribution as independent knobs.
 
 The attack inventory includes exact combinatorial baselines, five registered
 paper-method/component routes, and a pinned normal-LWE proxy.  Exactly 60/200
@@ -176,7 +177,7 @@ The task is PR-ready only when repository state demonstrates all of the
 following:
 
 - the packaged public catalog and sidecar exist and contain exactly 200 valid
-  records with 20 per family and the intended 60/140 allocation;
+  records with 20 per family while omitting hidden difficulty labels;
 - task-local and repository registration tests pass from a clean checkout;
 - the reference empty ledger prepares and evaluates successfully at score zero;
 - generated Harbor agent and judge assets contain byte-identical public data;

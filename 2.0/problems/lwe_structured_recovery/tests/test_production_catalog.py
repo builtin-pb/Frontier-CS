@@ -33,6 +33,11 @@ def test_slot_builder_has_exact_public_ladder_shape() -> None:
         "easy": 60,
         "hard": 140,
     }
+    assert Counter(slot["band"] for slot in slots) == {
+        "easy": 60,
+        "middle": 84,
+        "stretch": 56,
+    }
     for family in FAMILY_CODES:
         family_slots = [slot for slot in slots if slot["family"] == family]
         assert [slot["runtime_bin"] for slot in family_slots[:6]] == [
@@ -141,6 +146,7 @@ def test_checked_in_public_catalog_is_complete_bound_and_secret_free() -> None:
         "cohort",
         "octave",
         "runtime_bin",
+        "band",
         "analysis_path",
         "calibration_status",
         "calibration_model_id",

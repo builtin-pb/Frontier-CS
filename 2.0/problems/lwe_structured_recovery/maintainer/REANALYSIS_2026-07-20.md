@@ -28,10 +28,12 @@ Most important conclusions:
 - Previous rich catalog SHA-256:
   `bb24a596e43f781c4824c94292cd0093bb3f8da2b3fdd895337281df89d94081`
 - Current redacted public catalog SHA-256:
-  `66c3a9a22200087206891cc2842b8ec8e88a67e0ec8479ae6cfc905ef06944b6`
+  `379fc96637a0b5bb5dfdc10de0605a0922f223ba5544f8f6b48f67c3f8b8bcb6`
 
-The redacted catalog reused all 200 public instances. Only public JSON shape
-and per-instance digests changed.
+The first redacted catalog reused all 200 public instances. The 2026-07-21
+catalog then regenerated all 200 public `b` vectors and per-instance digests
+from fresh production entropy while keeping the audited parameter grid stable.
+See `CORPUS_DISTRIBUTION_2026-07-21.md` for the current hidden band allocation.
 
 ## New attack evidence
 

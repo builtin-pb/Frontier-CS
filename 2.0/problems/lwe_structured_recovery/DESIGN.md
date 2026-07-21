@@ -61,17 +61,20 @@ fallback for structured instances.
 
 ## 4. Difficulty ladder
 
-The immutable allocation is 60 easy instances and 140 hard instances:
+The hidden maintainer allocation is 60 easy instances, 84 middle instances,
+and 56 stretch instances:
 
 - Six easy bins `E0`–`E5`, with one instance per family in each bin.  Their
   target intervals are `[1,4)`, `[4,16)`, `[16,64)`, `[64,256)`, `[256,1024)`,
   and `[1024,3600)` seconds.
 - Ten hard octaves `H0`–`H9`, with fourteen instances per family and fourteen
-  instances per octave.  The target scale ranges from about one hour to 1024
-  hours and is uniform on a logarithmic scale by construction.
+  instances per octave.  H0--H5 form the hidden middle band and H6--H9 form
+  the hidden stretch band.  The target scale ranges from about one hour to
+  1024 hours and is uniform on a logarithmic scale by construction.
 
-These are two metadata axes: easy/hard is `tier`, while paper/ladder is
-`cohort`.  Exactly 60/200 records form the literature-backed easy tranche: 18
+These labels are maintainer-only.  Participant artifacts expose neither
+`tier`, `cohort`, `runtime_bin`, nor `band`.  Exactly 60/200 records form the
+literature-backed easy tranche: 18
 `DS_BIN`/`DS_TER`/`MIX_Q_SPARSE` records use full planted-domain enumeration, a
 degenerate specialization of Son--Cheon's exhaustive sparse-secret guessing
 component, and 42 use an error-free-subset/linear-solve/retry adaptation of
