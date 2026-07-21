@@ -97,24 +97,8 @@ class Instance:
         return self.__spec.b
 
     @property
-    def family(self) -> str:
+    def family(self) -> str | None:
         return self.__spec.family
-
-    @property
-    def tier(self) -> str:
-        return self.__spec.tier
-
-    @property
-    def cohort(self) -> str:
-        return self.__spec.cohort
-
-    @property
-    def runtime_bin(self) -> str:
-        return self.__spec.runtime_bin
-
-    @property
-    def octave(self) -> int | None:
-        return self.__spec.octave
 
     @property
     def matrix_kind(self) -> str:
@@ -201,28 +185,8 @@ class Instance:
         return self.__spec.error.max_nonzero
 
     @property
-    def analysis_path(self) -> str:
-        return self.__spec.analysis_path
-
-    @property
     def generator_version(self) -> str:
         return self.__spec.generator_version
-
-    @property
-    def calibration_status(self) -> str:
-        return self.__spec.calibration_status
-
-    @property
-    def calibration_model_id(self) -> str:
-        return self.__spec.calibration_model_id
-
-    @property
-    def predicted_runtime_seconds(self) -> float:
-        return self.__spec.predicted_runtime_seconds
-
-    @property
-    def measured_runtime_seconds(self) -> float | None:
-        return self.__spec.measured_runtime_seconds
 
     @property
     def instance_digest(self) -> str:

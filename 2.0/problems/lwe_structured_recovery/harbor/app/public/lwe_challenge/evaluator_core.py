@@ -25,18 +25,6 @@ from .submission import (
 )
 from .verification import validate_secret
 
-_FAMILIES = (
-    "DA_BIN",
-    "DA_TER",
-    "DS_BIN",
-    "DS_SMALL",
-    "DS_TER",
-    "MIX_DENSE_SMALL",
-    "MIX_Q_SPARSE",
-    "MIX_SMALL_SPARSE",
-    "SA_Q",
-    "SA_SMALL",
-)
 _MAX_INVALID_EXAMPLES = 20
 
 
@@ -206,41 +194,6 @@ def _build_metrics(
     invalid_examples: tuple[tuple[str | None, str], ...],
 ) -> Mapping[str, object]:
     solved_set = frozenset(solved_ids)
-    family_solved_counts = {family: 0 for family in _FAMILIES}
-    hard_octave_totals: Counter[int] = Counter()
-    hard_octave_solved_counts: Counter[int] = Counter()
-    easy_total = 0
-    easy_solved_count = 0
-    paper_total = 0
-    paper_solved_count = 0
-    hard_total = 0
-    hard_solved_count = 0
-    solved_hard_octaves: list[int] = []
-
-    for instance in catalog.instances:
-        is_solved = instance.instance_id in solved_set
-        if instance.tier == "easy":
-            easy_total += 1
-            easy_solved_count += int(is_solved)
-        if instance.cohort == "paper":
-            paper_total += 1
-            paper_solved_count += int(is_solved)
-        if instance.tier == "hard":
-            if instance.octave is None:
-                raise ValueError("hard instance must define an octave")
-            hard_total += 1
-            hard_octave_totals[instance.octave] += 1
-            if is_solved:
-                hard_solved_count += 1
-                hard_octave_solved_counts[instance.octave] += 1
-                solved_hard_octaves.append(instance.octave)
-        if is_solved:
-            family_solved_counts[instance.family] += 1
-
-    hard_octave_solved = {
-        str(octave): hard_octave_solved_counts[octave]
-        for octave in sorted(hard_octave_totals)
-    }
     return MappingProxyType(
         {
             "instance_count": len(catalog.instances),
@@ -255,22 +208,5 @@ def _build_metrics(
             ),
             "invalid_examples": invalid_examples,
             "solved_ids": solved_ids,
-            "easy_total": easy_total,
-            "easy_solved_count": easy_solved_count,
-            "paper_total": paper_total,
-            "paper_solved_count": paper_solved_count,
-            "hard_total": hard_total,
-            "hard_solved_count": hard_solved_count,
-            "family_solved_counts": MappingProxyType(family_solved_counts),
-            "hard_octave_totals": MappingProxyType(
-                {
-                    str(octave): hard_octave_totals[octave]
-                    for octave in sorted(hard_octave_totals)
-                }
-            ),
-            "hard_octave_solved_counts": MappingProxyType(hard_octave_solved),
-            "hardest_solved_octave": (
-                max(solved_hard_octaves) if solved_hard_octaves else None
-            ),
         }
     )

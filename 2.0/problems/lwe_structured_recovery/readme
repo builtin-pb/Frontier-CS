@@ -16,10 +16,10 @@ with a secret `s` and centered residual `e` that pass those predicates.  Any
 valid `s` is accepted; you do not have to recover the particular witness used
 when the instance was generated.
 
-## Corpus and difficulty ladder
+## Corpus
 
 The production corpus has 200 public instances, split evenly across ten
-families (20 per family):
+structural families (20 per family):
 
 | Family | Public structure |
 | --- | --- |
@@ -32,93 +32,12 @@ families (20 per family):
 | `MIX_SMALL_SPARSE` | sparse small-alphabet matrix and sparse small secret |
 | `MIX_DENSE_SMALL` | dense small-alphabet matrix and small or sparse small secret |
 
-The allocation contains 60 instances with `tier="easy", cohort="paper"` and
-140 with `tier="hard", cohort="ladder"`.  `tier` is the difficulty axis;
-`cohort` records the intended calibration basis.  Exactly 60/200 records form
-the literature-backed easy tranche: 18 `DS_BIN`/`DS_TER`/`MIX_Q_SPARSE`
-records use full planted-domain enumeration, a degenerate specialization of
-the exhaustive sparse-secret guessing component of Son--Cheon, and 42 records
-use an error-free-subset/linear-solve/retry adaptation of Sun--Tibouchi--Abe.
-The six mixed records also retain the Chi--Cho--Kim--Lee greedy route as a
-screened alternative, but that route is not needed for the 60-record
-accounting; exact enumeration is their runtime-bearing release model.  The
-planted-domain specialization is independent of the matrix and error laws
-because it traverses the declared planted support/value domain, which contains
-the planted witness, and then runs the public witness checker.  For balanced
-signed distributions this domain is narrower than the verifier-accepted
-exact-weight domain.  “Literature-backed” does not mean that a
-local implementation is source-identical, that Son--Cheon's lattice
-preprocessing, Gaussian success model, or constants transfer, that any other
-paper theorem transfers unchanged. Full final-byte E2 and E3 recovery replays
-exist, but nominal bin-edge runtimes for E2--E5 have not been established as
-portable isolated measurements. Each
-family contributes one instance to every easy bin `E0`–`E5` and fourteen hard
-instances.  The easy target intervals are
-`[1,4)`, `[4,16)`, `[16,64)`, `[64,256)`, `[256,1024)`, and `[1024,3600)`
-seconds.  The hard metadata cycles through ten logarithmic octaves `H0`–`H9`,
-targeting roughly one hour through 1024 hours on the documented single-core
-research model.
-
-These labels are navigation aids, not promises about wall-clock time on your
-implementation or machine.  Structured attacks have large constant factors
-and regime changes, and combinations of matrix and secret structure can
-interact.  The 84 hard secret-governed records use a bound portfolio containing
-exact planted-secret enumeration and a pinned four-attack normal-LWE Lattice
-Estimator proxy; nonuniform matrices are explicitly modeled as a heuristic
-uniform-matrix proxy.  Easy `DS_BIN`/`DS_TER` and `MIX_Q_SPARSE` records use
-dimension-aware exact enumeration as their runtime-bearing route, while seven
-easy families use a family-calibrated clean-subset 50%-success median runtime
-estimate.  Singular-minor rejection and implementation costs remain outside
-that probability model.  The mixed greedy method remains an attack to screen,
-not a selected runtime formula.
-Full-secret enumeration remains a generic fallback when no cheaper justified
-route is available.  None of these paths is a reduction or proof of hardness.
-
-The BBTV sparse-LWE theorem is not instantiated by the released sparse-matrix
-parameters.  All 80 sparse-matrix records use `k = ceil(2*sqrt(n))`, with
-`k^2/n` about 4.0--4.9, so its finite retained-sample factor
-`1 - 3/l - k^2/n` is negative.  Forty-six records also have dependent
-exact-global-weight sparse errors rather than independent per-sample errors,
-and the 40 mixed sparse-matrix records have exact-weight secrets rather than
-the theorem's uniform q-ary target.  This is only a theorem-scope check, not a
-claim that every sparse-LWE hardness result is inapplicable.
-
-On the final public bytes, retained single-worker E0/E1 recoveries and selected
-E2 boundary probes are recorded instance by instance.  Nine E2 probes censored
-at 16 seconds; `lwe_0083` recovered with seed 0 in 42.262039 internal seconds,
-inside E2 and near its 39.422135-second analytical median.  A later final-byte
-replay recovered all nine other E2 coordinates with 90-second single-worker
-attempts and deterministic seed retries.  The largest per-instance retry
-budget was four attempts, at most six minutes sequentially, and all nine new
-vectors passed together through the production evaluator with no invalid
-submission.  This supports the sub-hour easy classification but does not
-establish the nominal 64-second E2 upper edge or a portable runtime guarantee.
-A matching E3 replay recovered all ten E3 coordinates; the largest ordinary
-solve/retry budget was three 360-second attempts (18 minutes sequentially), and
-the production evaluator accepted all ten together with no invalid
-submission.  The original `lwe_0144` realization exposed a reproducible
-0.42-second fast tail.  Its disclosed two-sided replacement screen rejected
-one candidate below 64 seconds and another above 256 seconds; the retained
-candidate censored at 64 seconds and recovered in 85.376816 internal seconds.
-This supports the sub-hour easy classification but does not establish the
-nominal E3 upper edge or a portable runtime guarantee.
-A two-second `primal_bdd` screen over all 60 easy records recovered none.
-Additional capped portfolio screens identified the mixed greedy method as an
-important alternative, but the final `MIX_Q_SPARSE` runtime schedule is based
-on exact sparse-secret enumeration.  Nominal E2/E3 and all E4--E5 upper
-runtimes, and every hard runtime, remain extrapolated, so all public
-`measured_runtime_seconds` fields are null.
-The final-registry `lwe_0142` recovery took 14.338797 internal seconds on the
-calibration host, inside E1.  A historical run on the same public bytes took
-21.020 external seconds and missed the edge; both are retained explicitly as
-run/host-variance evidence, not a portable runtime bound.
-
-The intended workflow is incremental: inspect the public metadata, try the
-cheapest applicable attack, validate every candidate with the public facade,
-and submit each new solution immediately while retaining all earlier ones.
-The release-byte commands, solver revisions, seeds, and bounded timing evidence
-are recorded in `/app/CALIBRATION.md`; the instance-wise cryptanalysis remains
-in `/app/analyses/`.
+The public catalog deliberately omits difficulty labels, runtime bins,
+calibration estimates, cryptanalysis paths, and reference solutions.  You
+should treat the instance IDs as opaque names.  The intended workflow is
+incremental: inspect the public algebraic structure, try any attack strategy
+you like, validate every candidate with the public facade, and submit each new
+solution immediately while retaining all earlier ones.
 
 ## Reproducibility
 
@@ -130,45 +49,12 @@ Python facade is the reference implementation; independent implementations
 can be compared row-for-row against it.
 
 The current production catalog SHA-256 is
-`bb24a596e43f781c4824c94292cd0093bb3f8da2b3fdd895337281df89d94081`.
-An independent, non-selecting normal-LWE reference for all 200 records is stored
-in `/app/analyses/normal_lwe.jsonl` and is reproducible with
-`/app/tools/estimator/run_normal_lwe.py`.  It uses exact public `(n,m,q)`, maps
-uniform matrices, supported secret laws, and supported iid error laws directly,
-substitutes a uniform matrix for every structured matrix, removes truncation
-from a truncated-Gaussian error while retaining its standard deviation, and replaces
-dependent exact-global-weight sparse error by a variance-matched iid Gaussian.
-The artifact does not select catalog parameters or runtime labels and is not a
-reduction, benchmark, or hardness claim.
-
+`66c3a9a22200087206891cc2842b8ec8e88a67e0ec8479ae6cfc905ef06944b6`.
 Production witnesses and errors are sampled during corpus construction and must
 not be retained as evaluator inputs or release assets.  Reproducibility means
 reproducing the public instance from its released record, not recovering a
 private generation seed.  Synthetic generator tests accept an explicit seed
 and are byte-reproducible.
-
-## Reference attack menu
-
-The repository includes a small clean-room research portfolio for corpus
-analysis.  It is illustrative rather than an exclusive list of allowed
-solutions:
-
-| Solver | Classification | Main idea |
-| --- | --- | --- |
-| `primal_bdd` | paper method | q-ary lattice reduction and bounded-distance decoding following Lindner--Peikert |
-| `dense_minor` | paper method | dense-submatrix recovery for sparse LWE following Jain--Lin--Saha |
-| `mixed_filter_greedy` | paper method | greedy statistical recovery for sparse-row ternary LWE following Chi--Cho--Kim--Lee |
-| `sparse_secret_enum` | paper-component specialization, clean-room | full-guess specialization of Son--Cheon: enumerate the public exact-weight support/value domain and validate |
-| `sparse_secret_mitm` | original clean-room | meet in the middle over sparse-secret halves |
-| `small_secret_hybrid` | original clean-room | guess a small coordinate block, then call the lattice decoder |
-| `repeated_support` | original clean-room | exploit repeated sparse row supports |
-| `graph_peeling` | original clean-room | peel low-degree components of the sparse incidence graph |
-| `bounded_error` | paper-derived generalized adaptation, clean-room | adapt Sun--Tibouchi--Abe's clean-subset/solve/retry route and validate on the full public instance |
-
-Only the first three are registered as paper-method implementations.  Context
-citation does not make the remaining methods faithful implementations of the
-cited paper.  Full source mappings and limitations are recorded in
-`/app/tools/solvers/sources.json` and `/app/LITERATURE.md`.
 
 ## Public catalog and stable Python interface
 
@@ -177,10 +63,6 @@ The packaged task contract uses these agent-visible paths:
 ```text
 /app/public/catalog.jsonl       public instance catalog
 /app/public/lwe_instance.py     stable read-only Python facade
-/app/analyses/                  per-instance cryptanalysis dossiers
-/app/CALIBRATION.md             final-byte bounded calibration record
-/app/LITERATURE.md              literature and implementation map
-/app/tools/solvers/             reference-attack source and registry
 /app/add_solution.py            cumulative-ledger helper
 /app/solution.json              submitted solution ledger
 /app/submit.sh                  submission command
@@ -218,8 +100,7 @@ print(first_row, verdict.ok, verdict.code)
 ```
 
 `Catalog.instances` preserves public catalog order and `Catalog.get(id)` does
-lookup by ID.  Each immutable `Instance` exposes `n`, `m`, `q`, `b`, family,
-tier, cohort, runtime bin, octave, analysis/calibration labels, the matrix
+lookup by ID.  Each immutable `Instance` exposes `n`, `m`, `q`, `b`, the matrix
 kind/seed/domain/alphabet/row weight, all public secret and error distribution
 parameters, all verifier bounds, and the instance digest.  It also provides:
 
@@ -390,11 +271,9 @@ The public feedback contains the bounded `score`, count-valued
 `score_unbounded`, a sanitized summary message, and aggregate metrics.  Metrics
 include `instance_count`, `solved_count`, `submitted_count`, `invalid_count`,
 `duplicate_count`, `conflict_count`, `unknown_count`,
-`rejection_code_counts`, `invalid_examples`, and `solved_ids`.  It also reports
-public easy/paper/hard totals and solved counts, family solved counts, hard
-octave totals and solved counts, and `hardest_solved_octave`.  Feedback never
-contains submitted vectors, residuals, private values, filesystem paths,
-tracebacks, or exception text.
+`rejection_code_counts`, `invalid_examples`, and `solved_ids`.  Feedback never
+contains difficulty labels, runtime bins, family buckets, submitted vectors,
+residuals, private values, filesystem paths, tracebacks, or exception text.
 
 ## Iterate and submit cumulatively
 

@@ -69,7 +69,7 @@ _CALIBRATION_STATUSES = frozenset(
 )
 
 _CATALOG_KEYS = frozenset({"schema_version", "instances"})
-_INSTANCE_KEYS = frozenset(
+_PUBLIC_INSTANCE_KEYS = frozenset(
     {
         "schema_version",
         "instance_id",
@@ -82,20 +82,25 @@ _INSTANCE_KEYS = frozenset(
         "secret",
         "error_distribution",
         "error",
+        "generator_version",
+        "instance_digest",
+    }
+)
+_PRIVATE_INSTANCE_KEYS = frozenset(
+    {
         "family",
         "tier",
         "cohort",
         "octave",
         "runtime_bin",
         "analysis_path",
-        "generator_version",
         "calibration_status",
         "calibration_model_id",
         "predicted_runtime_seconds",
         "measured_runtime_seconds",
-        "instance_digest",
     }
 )
+_INSTANCE_KEYS = _PUBLIC_INSTANCE_KEYS | _PRIVATE_INSTANCE_KEYS
 _MATRIX_KEYS = frozenset(
     {"kind", "seed_hex", "expansion_domain", "alphabet", "row_weight"}
 )
@@ -185,29 +190,16 @@ class InstanceSpec:
     secret: SecretPredicateSpec
     error_distribution: ErrorDistributionSpec
     error: ErrorPredicateSpec
-    family: Literal[
-        "DS_BIN",
-        "DS_TER",
-        "DS_SMALL",
-        "SA_Q",
-        "SA_SMALL",
-        "DA_BIN",
-        "DA_TER",
-        "MIX_Q_SPARSE",
-        "MIX_SMALL_SPARSE",
-        "MIX_DENSE_SMALL",
-    ]
-    tier: Literal["easy", "hard", "synthetic"]
-    cohort: Literal["paper", "ladder", "synthetic"]
+    family: str | None
+    tier: str | None
+    cohort: str | None
     octave: int | None
-    runtime_bin: str
-    analysis_path: str
+    runtime_bin: str | None
+    analysis_path: str | None
     generator_version: str
-    calibration_status: Literal[
-        "unmeasured", "measured", "interpolated", "extrapolated"
-    ]
-    calibration_model_id: str
-    predicted_runtime_seconds: float
+    calibration_status: str | None
+    calibration_model_id: str | None
+    predicted_runtime_seconds: float | None
     measured_runtime_seconds: float | None
     instance_digest: str
 
@@ -359,9 +351,7 @@ def _read_regular_catalog_fd(descriptor: int) -> bytes:
 def compute_instance_digest(record: Mapping[str, object]) -> str:
     digest_record = dict(record)
     for key in _DIGEST_EXCLUDED_FIELDS:
-        if key not in digest_record:
-            raise ValueError(f"record is missing digest field: {key}")
-        del digest_record[key]
+        digest_record.pop(key, None)
     return hashlib.sha256(canonical_record_bytes(digest_record)).hexdigest()
 
 
@@ -415,12 +405,12 @@ def _load_jsonl_records(
 
 
 def _record_instance_id(record: Mapping[str, object]) -> str:
-    _require_exact_keys(record, _INSTANCE_KEYS, "instance")
+    _require_instance_keys(record)
     return _parse_instance_id(record["instance_id"])
 
 
 def _parse_instance(raw: Mapping[str, object]) -> InstanceSpec:
-    _require_exact_keys(raw, _INSTANCE_KEYS, "instance")
+    _require_instance_keys(raw)
     schema_version = _schema_version(raw["schema_version"], "instance")
     instance_id = _parse_instance_id(raw["instance_id"])
     n = _require_integer(raw["n"], "n")
@@ -444,27 +434,19 @@ def _parse_instance(raw: Mapping[str, object]) -> InstanceSpec:
         raw["error_distribution"], raw["error"], m=m
     )
 
-    family = _require_choice(raw["family"], _FAMILIES, "family")
-    tier = _require_choice(raw["tier"], {"easy", "hard", "synthetic"}, "tier")
-    cohort = _require_choice(
-        raw["cohort"], {"paper", "ladder", "synthetic"}, "cohort"
+    family = _parse_optional_family(raw)
+    tier, cohort, octave, runtime_bin = _parse_optional_tier_metadata(raw)
+    analysis_path = (
+        _parse_analysis_path(raw["analysis_path"])
+        if "analysis_path" in raw
+        else None
     )
-    octave = _require_optional_integer(raw["octave"], "octave")
-    runtime_bin = _require_string(raw["runtime_bin"], "runtime_bin")
-    _validate_tier_metadata(
-        tier=tier, cohort=cohort, runtime_bin=runtime_bin, octave=octave
-    )
-
-    analysis_path = _parse_analysis_path(raw["analysis_path"])
     generator_version = _require_nonempty_string(
         raw["generator_version"], "generator_version"
     )
-    (
-        calibration_status,
-        calibration_model_id,
-        predicted_runtime_seconds,
-        measured_runtime_seconds,
-    ) = _parse_calibration(raw)
+    calibration_status, calibration_model_id, predicted_runtime_seconds, measured_runtime_seconds = (
+        _parse_optional_calibration(raw)
+    )
 
     instance_digest = _require_string(raw["instance_digest"], "instance_digest")
     if _HEX_64.fullmatch(instance_digest) is None:
@@ -798,6 +780,53 @@ def _parse_calibration(
     return status, model_id, predicted, measured
 
 
+def _parse_optional_family(raw: Mapping[str, object]) -> str | None:
+    if "family" not in raw:
+        return None
+    return _require_choice(raw["family"], _FAMILIES, "family")
+
+
+def _parse_optional_tier_metadata(
+    raw: Mapping[str, object],
+) -> tuple[str | None, str | None, int | None, str | None]:
+    keys = {"tier", "cohort", "octave", "runtime_bin"}
+    present = keys & set(raw)
+    if not present:
+        return None, None, None, None
+    if present != keys:
+        missing = ", ".join(sorted(keys - present))
+        raise ValueError(f"missing instance private tier metadata fields: {missing}")
+
+    tier = _require_choice(raw["tier"], {"easy", "hard", "synthetic"}, "tier")
+    cohort = _require_choice(
+        raw["cohort"], {"paper", "ladder", "synthetic"}, "cohort"
+    )
+    octave = _require_optional_integer(raw["octave"], "octave")
+    runtime_bin = _require_string(raw["runtime_bin"], "runtime_bin")
+    _validate_tier_metadata(
+        tier=tier, cohort=cohort, runtime_bin=runtime_bin, octave=octave
+    )
+    return tier, cohort, octave, runtime_bin
+
+
+def _parse_optional_calibration(
+    raw: Mapping[str, object],
+) -> tuple[str | None, str | None, float | None, float | None]:
+    keys = {
+        "calibration_status",
+        "calibration_model_id",
+        "predicted_runtime_seconds",
+        "measured_runtime_seconds",
+    }
+    present = keys & set(raw)
+    if not present:
+        return None, None, None, None
+    if present != keys:
+        missing = ", ".join(sorted(keys - present))
+        raise ValueError(f"missing instance private calibration fields: {missing}")
+    return _parse_calibration(raw)
+
+
 def _parse_alphabet(raw_value: object, *, q: int, context: str) -> tuple[int, ...]:
     raw = _require_list(raw_value, context)
     values = tuple(
@@ -876,6 +905,16 @@ def _require_exact_keys(
         raise ValueError(f"unknown {context} fields: {', '.join(unknown)}")
     if missing:
         raise ValueError(f"missing {context} fields: {', '.join(missing)}")
+
+
+def _require_instance_keys(raw: Mapping[str, object]) -> None:
+    keys = set(raw)
+    unknown = sorted(keys - _INSTANCE_KEYS)
+    missing = sorted(_PUBLIC_INSTANCE_KEYS - keys)
+    if unknown:
+        raise ValueError(f"unknown instance fields: {', '.join(unknown)}")
+    if missing:
+        raise ValueError(f"missing instance fields: {', '.join(missing)}")
 
 
 def _require_mapping(raw_value: object, context: str) -> Mapping[str, object]:

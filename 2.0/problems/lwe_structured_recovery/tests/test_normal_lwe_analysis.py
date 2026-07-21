@@ -10,11 +10,12 @@ import pytest
 
 TASK_DIR = Path(__file__).resolve().parents[1]
 APP_DIR = TASK_DIR / "harbor" / "app"
+MAINTAINER_DIR = TASK_DIR / "maintainer"
 CATALOG_PATH = APP_DIR / "public" / "catalog.jsonl"
-NORMAL_LWE_PATH = APP_DIR / "analyses" / "normal_lwe.jsonl"
+NORMAL_LWE_PATH = MAINTAINER_DIR / "analyses" / "normal_lwe.jsonl"
 
 CATALOG_SHA256 = (
-    "bb24a596e43f781c4824c94292cd0093bb3f8da2b3fdd895337281df89d94081"
+    "66c3a9a22200087206891cc2842b8ec8e88a67e0ec8479ae6cfc905ef06944b6"
 )
 SOURCE_COMMIT = "3e48ef421ec256afddb3e7d2249a77eab6e9ba12"
 SOURCE_REPOSITORY = "https://github.com/malb/lattice-estimator"
@@ -43,6 +44,12 @@ def _load_jsonl(path: Path) -> list[dict[str, object]]:
         json.loads(line)
         for line in path.read_text(encoding="utf-8").splitlines()
     ]
+
+
+def _private_specs_by_id() -> dict[str, dict[str, object]]:
+    from tools.corpus.build_catalog import build_specs
+
+    return {str(record["instance_id"]): record for record in build_specs()}
 
 
 def _assert_finite_numbers(value: object) -> None:
@@ -192,11 +199,9 @@ def test_normal_lwe_mapping_labels_track_exact_and_proxy_inputs() -> None:
 
 
 def test_every_dossier_has_one_bound_normal_lwe_cross_check() -> None:
-    catalog = {
-        record["instance_id"]: record for record in _load_jsonl(CATALOG_PATH)
-    }
+    catalog = _private_specs_by_id()
     for row in _load_jsonl(NORMAL_LWE_PATH):
-        dossier_path = APP_DIR / "analyses" / f"{row['instance_id']}.md"
+        dossier_path = MAINTAINER_DIR / "analyses" / f"{row['instance_id']}.md"
         dossier = dossier_path.read_text(encoding="utf-8")
         record = catalog[row["instance_id"]]
         assert dossier.splitlines()[0] == (
@@ -222,9 +227,7 @@ def test_every_dossier_has_one_bound_normal_lwe_cross_check() -> None:
 
 
 def test_hard_registered_estimator_coordinates_match_all_record_sweep() -> None:
-    catalog = {
-        record["instance_id"]: record for record in _load_jsonl(CATALOG_PATH)
-    }
+    catalog = _private_specs_by_id()
     rows = {
         row["instance_id"]: row for row in _load_jsonl(NORMAL_LWE_PATH)
     }

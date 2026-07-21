@@ -17,6 +17,7 @@ from tools.solvers.api import ValidatedExactSolver, SolveResult
 
 TASK_DIR = Path(__file__).resolve().parents[1]
 APP_DIR = TASK_DIR / "harbor" / "app"
+MAINTAINER_DIR = TASK_DIR / "maintainer"
 SOLVER_REVISION = "a" * 64
 
 
@@ -45,7 +46,7 @@ def _run_lazy_import_probe(
     )
     return subprocess.run(
         [sys.executable, "-c", probe],
-        cwd=APP_DIR,
+        cwd=MAINTAINER_DIR,
         env={
             "PATH": os.environ.get("PATH", ""),
             "HOME": str(tmp_path),

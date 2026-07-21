@@ -53,18 +53,8 @@
         "max_l2_squared": 4,
         "max_nonzero": 4
       },
-      "family": "MIX_DENSE_SMALL",
-      "tier": "synthetic",
-      "cohort": "synthetic",
-      "octave": null,
-      "runtime_bin": "synthetic",
-      "analysis_path": "analysis/toy-uniform.md",
       "generator_version": "synthetic-fixture-v1",
-      "calibration_status": "unmeasured",
-      "calibration_model_id": "",
-      "predicted_runtime_seconds": 0.0,
-      "measured_runtime_seconds": null,
-      "instance_digest": "d725742c65529afa66f08368c5b093255aab34fe1624fd7cac474d2ab4e0955c"
+      "instance_digest": "3f12947b7f30dfab9e6847bc25bb6f9b5d9e035e33bc3388b915bcb365e6c501"
     },
     {
       "schema_version": 1,
@@ -119,18 +109,8 @@
         "max_l2_squared": 1,
         "max_nonzero": 1
       },
-      "family": "MIX_SMALL_SPARSE",
-      "tier": "synthetic",
-      "cohort": "synthetic",
-      "octave": null,
-      "runtime_bin": "synthetic",
-      "analysis_path": "analysis/toy-sparse.md",
       "generator_version": "synthetic-fixture-v1",
-      "calibration_status": "unmeasured",
-      "calibration_model_id": "",
-      "predicted_runtime_seconds": 0.0,
-      "measured_runtime_seconds": null,
-      "instance_digest": "c55e6a98668fb7f0d501fe80dc69586d2dcdc1411e0d53eb8da390a324999e3b"
+      "instance_digest": "66096bb6da2fe554333fdf5f61b57cde81453405debc2ddf0ea69e3b15943b16"
     }
   ]
 }

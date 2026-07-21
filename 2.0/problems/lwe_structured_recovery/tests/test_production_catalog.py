@@ -3,7 +3,6 @@ from __future__ import annotations
 import hashlib
 import json
 import math
-import re
 from collections import Counter
 from math import comb
 from pathlib import Path
@@ -85,8 +84,8 @@ def test_parameter_specs_cover_every_family_with_schema_valid_templates() -> Non
         assert not ({"private_seed", "private_secret", "private_error"} & set(spec))
         instance = _validated_template_instance(spec_to_template(spec))
         assert instance.instance_id == spec["instance_id"]
-        assert instance.family == spec["family"]
-        assert instance.runtime_bin == spec["runtime_bin"]
+        assert instance.family is None
+        assert instance.runtime_bin is None
 
     by_family = {
         family: [spec for spec in specs if spec["family"] == family]
@@ -116,56 +115,52 @@ def test_parameter_specs_cover_every_family_with_schema_valid_templates() -> Non
 
 
 def test_checked_in_public_catalog_is_complete_bound_and_secret_free() -> None:
-    from tools.corpus.build_catalog import build_slots, build_specs, spec_to_template
+    from tools.corpus.build_catalog import build_specs, spec_to_template
 
     catalog_path = PUBLIC_DIR / "catalog.jsonl"
     catalog_bytes = catalog_path.read_bytes()
     catalog = Catalog.load(catalog_path)
+    raw_records = [
+        json.loads(line) for line in catalog_path.read_text(encoding="utf-8").splitlines()
+    ]
 
     assert len(catalog.instances) == 200
     assert [instance.instance_id for instance in catalog.instances] == [
         f"lwe_{index:04d}" for index in range(1, 201)
     ]
-    assert Counter(instance.family for instance in catalog.instances) == {
-        family: 20
-        for family in (
-            "DS_BIN",
-            "DS_TER",
-            "DS_SMALL",
-            "SA_Q",
-            "SA_SMALL",
-            "DA_BIN",
-            "DA_TER",
-            "MIX_Q_SPARSE",
-            "MIX_SMALL_SPARSE",
-            "MIX_DENSE_SMALL",
-        )
-    }
-    assert Counter(instance.tier for instance in catalog.instances) == {
-        "easy": 60,
-        "hard": 140,
-    }
     digest = hashlib.sha256(catalog_bytes).hexdigest()
     assert (PUBLIC_DIR / "catalog.sha256").read_text(encoding="ascii") == (
         f"{digest}  catalog.jsonl\n"
     )
+    assert not (PUBLIC_DIR / "slots.json").exists()
+    assert not (PUBLIC_DIR / "specs").exists()
 
-    slots = json.loads((PUBLIC_DIR / "slots.json").read_text(encoding="utf-8"))
-    spec_paths = sorted((PUBLIC_DIR / "specs").glob("lwe_*.json"))
-    assert len(slots) == len(spec_paths) == 200
-    assert slots == build_slots()
-    for instance, slot, spec_path, expected_spec in zip(
-        catalog.instances, slots, spec_paths, build_specs()
-    ):
-        spec = json.loads(spec_path.read_text(encoding="utf-8"))
-        assert spec == expected_spec
+    private_fields = {
+        "family",
+        "tier",
+        "cohort",
+        "octave",
+        "runtime_bin",
+        "analysis_path",
+        "calibration_status",
+        "calibration_model_id",
+        "predicted_runtime_seconds",
+        "measured_runtime_seconds",
+        "analytical_model",
+        "target_runtime_seconds",
+    }
+    for raw_record in raw_records:
+        assert private_fields.isdisjoint(raw_record)
+
+    expected_specs = {str(spec["instance_id"]): spec for spec in build_specs()}
+    for instance in catalog.instances:
+        spec = expected_specs[instance.instance_id]
         template = spec_to_template(spec)
-        assert instance.instance_id == slot["instance_id"] == spec["instance_id"]
-        assert instance.family == slot["family"] == spec["family"]
-        assert instance.runtime_bin == slot["runtime_bin"] == spec["runtime_bin"]
-        assert instance.predicted_runtime_seconds == spec[
-            "predicted_runtime_seconds"
-        ]
+        assert instance.family is None
+        assert instance.tier is None
+        assert instance.runtime_bin is None
+        assert instance.analysis_path is None
+        assert instance.predicted_runtime_seconds is None
         assert (instance.n, instance.m, instance.q) == (
             template.n,
             template.m,
@@ -182,7 +177,7 @@ def test_checked_in_public_catalog_is_complete_bound_and_secret_free() -> None:
             "private_error",
             "private_attestation",
         }
-        assert forbidden.isdisjoint(spec)
+        assert forbidden.isdisjoint(raw_records[int(instance.instance_id[-4:]) - 1])
 
     lowered = catalog_bytes.lower()
     for forbidden_token in (
@@ -193,21 +188,8 @@ def test_checked_in_public_catalog_is_complete_bound_and_secret_free() -> None:
     ):
         assert forbidden_token not in lowered
     format_text = (PUBLIC_DIR / "format.md").read_text(encoding="utf-8")
-    assert "intentionally excludes analysis, calibration, and runtime" in format_text
+    assert "deliberately omit tier labels" in format_text
     assert "complete exact JSONL record bytes" in format_text
-    assert "normalized analytical design rates" in format_text
-
-    for instance in catalog.instances:
-        analysis_path = TASK_DIR / "harbor" / "app" / instance.analysis_path
-        analysis_text = analysis_path.read_text(encoding="utf-8")
-        assert analysis_text.strip()
-        embedded_digest = re.search(
-            r"(?:instance|record)[ _-]digest\s*[:=]\s*`?([0-9a-f]{64})`?",
-            analysis_text,
-            flags=re.IGNORECASE,
-        )
-        assert embedded_digest is not None
-        assert embedded_digest.group(1) == instance.instance_digest
 
 
 def test_specs_preserve_sparse_lwe_and_low_entropy_safety_margins() -> None:
@@ -257,17 +239,7 @@ def test_hard_secret_governed_specs_use_pinned_estimator_schedules() -> None:
         "725595ce2bb23a86890808074388c24b01903c46f2a78f9aa5ca57412a7cbfee"
     )
 
-    specs = build_specs()
-    for spec in specs:
-        if spec["tier"] == "easy":
-            checked_in = json.loads(
-                (PUBLIC_DIR / "specs" / f"{spec['instance_id']}.json").read_text(
-                    encoding="utf-8"
-                )
-            )
-            assert spec == checked_in
-
-    for spec in specs:
+    for spec in build_specs():
         if spec["tier"] != "hard" or spec["family"] not in (
             exact_families | {"DS_SMALL"}
         ):
@@ -670,10 +642,8 @@ def test_reuse_requires_exact_cryptographic_compatibility() -> None:
     metadata_only["analytical_model"]["predicted_runtime_seconds"] *= 1.01
     reused_with_new_metadata = reuse_compatible_record(existing, metadata_only)
     assert reused_with_new_metadata is not None
-    assert reused_with_new_metadata["analysis_path"] == metadata_only["analysis_path"]
-    assert reused_with_new_metadata["predicted_runtime_seconds"] == (
-        metadata_only["predicted_runtime_seconds"]
-    )
+    assert "analysis_path" not in reused_with_new_metadata
+    assert "predicted_runtime_seconds" not in reused_with_new_metadata
     assert reused_with_new_metadata["instance_digest"] == existing["instance_digest"]
 
     changed_crypto = json.loads(json.dumps(spec))

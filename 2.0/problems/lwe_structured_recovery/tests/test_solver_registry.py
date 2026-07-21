@@ -27,8 +27,11 @@ EXPECTED_SOLVERS = (
     "graph_peeling",
     "dense_minor",
     "mixed_filter_greedy",
+    "support_incidence",
     "bounded_error",
 )
+TASK_DIR = Path(__file__).parents[1]
+SOLVER_DIR = TASK_DIR / "maintainer" / "tools" / "solvers"
 
 
 def test_registry_has_the_public_reference_portfolio() -> None:
@@ -67,9 +70,7 @@ def _receipt_with_mutated_source(
 ):
     record = next(record for record in load_registry() if record.solver_id == solver_id)
     original = canonical_solver_implementation_receipt(record)
-    source_path = (
-        Path(__file__).parents[1] / "harbor/app/tools/solvers" / source_name
-    ).resolve()
+    source_path = (SOLVER_DIR / source_name).resolve()
     read_bytes = Path.read_bytes
 
     def mutate_selected_source(path: Path) -> bytes:
@@ -112,6 +113,7 @@ def test_implementation_receipt_binds_the_solver_package_initializer(
     (
         ("small_secret_hybrid", "primal_bdd.py"),
         ("mixed_filter_greedy", "sparse_matrix.py"),
+        ("support_incidence", "support_incidence.py"),
     ),
 )
 def test_implementation_receipt_binds_nested_and_shared_solver_modules(
@@ -195,9 +197,7 @@ def test_registry_rejects_duplicate_json_keys(tmp_path: Path) -> None:
 
 def test_registry_rejects_unknown_sources(tmp_path: Path) -> None:
     raw = json.loads(
-        (Path(__file__).parents[1] / "harbor/app/tools/solvers/registry.json").read_text(
-            encoding="utf-8"
-        )
+        (SOLVER_DIR / "registry.json").read_text(encoding="utf-8")
     )
     raw["solvers"][0]["method_sources"] = ["missing-source"]
     path = tmp_path / "registry.json"
@@ -210,9 +210,9 @@ def test_registry_resources_contain_no_private_witness_material(task_dir: Path) 
     payload = b"".join(
         (task_dir / relative).read_bytes()
         for relative in (
-            "harbor/app/tools/solvers/registry.json",
-            "harbor/app/tools/solvers/sources.json",
-            "harbor/app/tools/solvers/THIRD_PARTY_NOTICES.md",
+            "maintainer/tools/solvers/registry.json",
+            "maintainer/tools/solvers/sources.json",
+            "maintainer/tools/solvers/THIRD_PARTY_NOTICES.md",
         )
     ).lower()
     for forbidden in (

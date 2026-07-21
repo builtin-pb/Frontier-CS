@@ -5,7 +5,6 @@ from dataclasses import FrozenInstanceError, replace
 import pytest
 
 import lwe_challenge.evaluator_core as evaluator_core
-import lwe_challenge.schema as schema
 import lwe_challenge.verification as verification
 from lwe_challenge.evaluator_core import evaluate_bytes, evaluate_path
 from lwe_challenge.matrix import matvec_mod
@@ -17,29 +16,15 @@ from lwe_challenge.submission import MAX_SUBMISSION_BYTES
 EXPECTED_METRIC_KEYS = {
     "conflict_count",
     "duplicate_count",
-    "easy_solved_count",
-    "easy_total",
-    "family_solved_counts",
-    "hard_octave_solved_counts",
-    "hard_octave_totals",
-    "hard_solved_count",
-    "hard_total",
-    "hardest_solved_octave",
     "instance_count",
     "invalid_count",
     "invalid_examples",
-    "paper_solved_count",
-    "paper_total",
     "rejection_code_counts",
     "solved_count",
     "solved_ids",
     "submitted_count",
     "unknown_count",
 }
-
-
-def test_family_metric_registry_tracks_the_schema_contract() -> None:
-    assert frozenset(evaluator_core._FAMILIES) == schema._FAMILIES
 
 
 def test_one_of_two_valid_witnesses_scores_fifty(
@@ -235,7 +220,7 @@ def test_duplicate_poisoned_instance_scores_zero(catalog) -> None:
     assert result.metrics["invalid_count"] == 2
 
 
-def test_metadata_metrics_cover_tiers_families_and_hard_octaves(catalog) -> None:
+def test_private_metadata_does_not_leak_through_public_metrics(catalog) -> None:
     base = catalog.get("toy-uniform")
     secret = (1, 0, -1)
     public_error = (1, -1, 0, 1)
@@ -308,27 +293,20 @@ def test_metadata_metrics_cover_tiers_families_and_hard_octaves(catalog) -> None
     result = evaluate_bytes(data, catalog=metadata_catalog)
 
     assert result.metrics["instance_count"] == 5
-    assert result.metrics["easy_total"] == 2
-    assert result.metrics["easy_solved_count"] == 1
-    assert result.metrics["paper_total"] == 2
-    assert result.metrics["paper_solved_count"] == 1
-    assert result.metrics["hard_total"] == 2
-    assert result.metrics["hard_solved_count"] == 2
-    assert result.metrics["family_solved_counts"] == {
-        "DA_BIN": 0,
-        "DA_TER": 0,
-        "DS_BIN": 1,
-        "DS_SMALL": 0,
-        "DS_TER": 0,
-        "MIX_DENSE_SMALL": 0,
-        "MIX_Q_SPARSE": 1,
-        "MIX_SMALL_SPARSE": 0,
-        "SA_Q": 1,
-        "SA_SMALL": 0,
-    }
-    assert result.metrics["hard_octave_totals"] == {"2": 1, "5": 1}
-    assert result.metrics["hard_octave_solved_counts"] == {"2": 1, "5": 1}
-    assert result.metrics["hardest_solved_octave"] == 5
+    assert result.metrics["solved_count"] == 3
+    for private_key in (
+        "easy_total",
+        "easy_solved_count",
+        "paper_total",
+        "paper_solved_count",
+        "hard_total",
+        "hard_solved_count",
+        "family_solved_counts",
+        "hard_octave_totals",
+        "hard_octave_solved_counts",
+        "hardest_solved_octave",
+    ):
+        assert private_key not in result.metrics
 
 
 def test_invalid_examples_are_capped_without_truncating_aggregates(catalog) -> None:
@@ -428,27 +406,6 @@ def test_public_result_is_deeply_immutable_and_does_not_leak_witness_data(
     with pytest.raises(FrozenInstanceError):
         result.score = 100.0
     assert not hasattr(result, "__dict__")
-
-
-def test_nested_metric_mappings_resist_base_dict_descriptor_attacks(
-    catalog, valid_submission_bytes
-) -> None:
-    result = evaluate_bytes(valid_submission_bytes, catalog=catalog)
-    counts = result.metrics["family_solved_counts"]
-    original = dict(counts)
-    assert not isinstance(counts, dict)
-    operations = (
-        lambda: dict.__setitem__(counts, "DS_BIN", 99),
-        lambda: dict.__delitem__(counts, "DS_BIN"),
-        lambda: dict.update(counts, {"DS_BIN": 99}),
-        lambda: dict.clear(counts),
-        lambda: dict.__init__(counts, {"DS_BIN": 99}),
-    )
-
-    for operation in operations:
-        with pytest.raises(TypeError):
-            operation()
-    assert dict(counts) == original
 
 
 def test_missing_submission_path_scores_zero_with_stable_code(

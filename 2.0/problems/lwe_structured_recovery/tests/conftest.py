@@ -30,9 +30,10 @@ SOLVER_FIXTURE_IDS = (
 TASK_DIR = Path(__file__).resolve().parents[1]
 APP_DIR = TASK_DIR / "harbor" / "app"
 PUBLIC_DIR = APP_DIR / "public"
+MAINTAINER_DIR = TASK_DIR / "maintainer"
 FIXTURES_DIR = Path(__file__).resolve().parent / "fixtures"
 
-sys.path[:0] = [str(TASK_DIR), str(APP_DIR), str(PUBLIC_DIR)]
+sys.path[:0] = [str(TASK_DIR), str(MAINTAINER_DIR), str(APP_DIR), str(PUBLIC_DIR)]
 
 
 def load_task_module(path: Path, module_name: str) -> ModuleType:

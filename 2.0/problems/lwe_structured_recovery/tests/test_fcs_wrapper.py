@@ -354,56 +354,17 @@ def test_plain_metrics_are_json_native_and_detached_from_the_core_result(
     snapshot = module._plain_data(core_result.metrics)
     encoded = json.dumps(snapshot, allow_nan=False, sort_keys=True)
     assert isinstance(snapshot, dict)
-    assert isinstance(snapshot["family_solved_counts"], dict)
     assert isinstance(snapshot["solved_ids"], list)
     assert isinstance(snapshot["invalid_examples"], list)
     assert "toy-uniform" in encoded
+    assert "family_solved_counts" not in snapshot
+    assert "hard_octave_totals" not in snapshot
 
-    snapshot["family_solved_counts"]["DS_BIN"] = 99
     snapshot["solved_ids"].append("fabricated")
     snapshot["invalid_examples"].append(["fabricated", "fabricated"])
 
-    assert core_result.metrics["family_solved_counts"]["DS_BIN"] == 0
     assert core_result.metrics["solved_ids"] == ("toy-uniform",)
     assert core_result.metrics["invalid_examples"] == ()
-
-
-def test_hard_octave_metrics_are_json_native_end_to_end(
-    task_dir: Path, task_module_loader, monkeypatch, tmp_path: Path
-) -> None:
-    source = json.loads(
-        (task_dir / "tests" / "fixtures" / "catalog_two_instances.json")
-        .read_text(encoding="utf-8")
-    )["instances"][0]
-    record = dict(source)
-    record["tier"] = "hard"
-    record["cohort"] = "ladder"
-    record["runtime_bin"] = "H2"
-    record["octave"] = 2
-    record["instance_digest"] = compute_instance_digest(record)
-    catalog_path = tmp_path / "hard-catalog.json"
-    catalog_path.write_text(
-        json.dumps(
-            {"schema_version": 1, "instances": [record]},
-            separators=(",", ":"),
-        ),
-        encoding="utf-8",
-    )
-    module = _load_with_override(
-        task_dir=task_dir,
-        task_module_loader=task_module_loader,
-        monkeypatch=monkeypatch,
-        catalog_path=catalog_path,
-        module_name="lwe_evaluator_hard_octave_metrics",
-    )
-
-    _score, _unbounded, _message, metrics = module.evaluate(
-        str(task_dir / "reference.json")
-    )
-
-    assert metrics["hard_octave_totals"] == {"2": 1}
-    assert metrics["hard_octave_solved_counts"] == {"2": 0}
-    json.dumps(metrics, allow_nan=False)
 
 
 def test_public_result_never_contains_secrets_paths_residuals_or_tracebacks(

@@ -12,10 +12,11 @@ from tools.solvers.registry import (
 
 TASK_DIR = Path(__file__).resolve().parents[1]
 APP_DIR = TASK_DIR / "harbor" / "app"
+MAINTAINER_DIR = TASK_DIR / "maintainer"
 CATALOG_PATH = APP_DIR / "public" / "catalog.jsonl"
-RECEIPTS_PATH = APP_DIR / "analyses" / "calibration_runs.jsonl"
+RECEIPTS_PATH = MAINTAINER_DIR / "analyses" / "calibration_runs.jsonl"
 CATALOG_SHA256 = (
-    "bb24a596e43f781c4824c94292cd0093bb3f8da2b3fdd895337281df89d94081"
+    "66c3a9a22200087206891cc2842b8ec8e88a67e0ec8479ae6cfc905ef06944b6"
 )
 SPARSE_SECRET_REVISION = (
     "f488f140edffa610e76755e005e8fd0ec91e9ba856e6250ec3102a045f9909ec"
@@ -155,7 +156,7 @@ def test_documented_solver_revisions_match_current_canonical_receipts() -> None:
         ).implementation_digest
         for record in load_registry()
     }
-    calibration = (APP_DIR / "CALIBRATION.md").read_text(encoding="utf-8")
+    calibration = (MAINTAINER_DIR / "CALIBRATION.md").read_text(encoding="utf-8")
     expected = {
         "sparse_secret_enum": SPARSE_SECRET_REVISION,
         "mixed_filter_greedy": MIXED_FILTER_REVISION,

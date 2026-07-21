@@ -560,7 +560,7 @@ def test_production_generation_draws_entropy_once_without_synthetic_delegation(
     "invalid_template",
     (
         lambda template: replace(template, n=0),
-        lambda template: replace(template, cohort="paper"),
+        lambda template: replace(template, instance_id=""),
         lambda template: replace(
             template,
             matrix=replace(template.matrix, expansion_domain="wrong-domain"),
@@ -1645,9 +1645,9 @@ def test_checked_in_synthetic_catalog_reproduces_without_private_material(
         "toy-uniform",
         "toy-sparse",
     )
-    assert all(item.cohort == "synthetic" for item in catalog.instances)
-    assert all(item.tier == "synthetic" for item in catalog.instances)
-    assert all(item.runtime_bin == "synthetic" for item in catalog.instances)
+    assert all(item.cohort is None for item in catalog.instances)
+    assert all(item.tier is None for item in catalog.instances)
+    assert all(item.runtime_bin is None for item in catalog.instances)
     assert all(
         validate_secret(item.instance, item.private_secret).ok
         for item in generated
@@ -1662,6 +1662,16 @@ def test_checked_in_synthetic_catalog_reproduces_without_private_material(
         "answer_hash",
         "secret_hash",
         "error_hash",
+        "family",
+        "tier",
+        "cohort",
+        "octave",
+        "runtime_bin",
+        "analysis_path",
+        "calibration_status",
+        "calibration_model_id",
+        "predicted_runtime_seconds",
+        "measured_runtime_seconds",
     }
     assert set(_nested_keys(document)).isdisjoint(forbidden_keys)
     assert set(_nested_scalar_values(document)).isdisjoint(

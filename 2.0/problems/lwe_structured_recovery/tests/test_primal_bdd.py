@@ -250,7 +250,7 @@ def test_task6_run_control_rejects_hostile_resume_and_enforces_caps(
 
 
 def test_static_imports_do_not_touch_native_solver_dependencies(tmp_path: Path) -> None:
-    app_dir = Path(__file__).resolve().parents[1] / "harbor" / "app"
+    maintainer_dir = Path(__file__).resolve().parents[1] / "maintainer"
     probe = (
         "import builtins\n"
         "real_import = builtins.__import__\n"
@@ -266,7 +266,7 @@ def test_static_imports_do_not_touch_native_solver_dependencies(tmp_path: Path) 
     )
     completed = subprocess.run(
         [sys.executable, "-c", probe],
-        cwd=app_dir,
+        cwd=maintainer_dir,
         env={
             "HOME": str(tmp_path),
             "PATH": os.environ.get("PATH", ""),

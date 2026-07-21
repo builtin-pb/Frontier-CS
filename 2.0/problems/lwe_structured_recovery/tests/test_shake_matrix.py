@@ -73,7 +73,7 @@ _UINT32_MAX_EXPECTED_ROWS = {
 }
 
 _TASK_DIR = Path(__file__).resolve().parents[1]
-_MATRIX_REF_SOURCE = _TASK_DIR / "harbor" / "app" / "tools" / "audit" / "matrix_ref.c"
+_MATRIX_REF_SOURCE = _TASK_DIR / "maintainer" / "tools" / "audit" / "matrix_ref.c"
 _COMPILE_TIMEOUT_SECONDS = 30
 _NATIVE_TIMEOUT_SECONDS = 10
 
