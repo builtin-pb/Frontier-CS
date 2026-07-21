@@ -19,6 +19,7 @@ CURRENT_PROBES_PATH = MAINTAINER_DIR / "analyses" / "current_probe_runs.jsonl"
 CURRENT_E0_PROBES_PATH = (
     MAINTAINER_DIR / "analyses" / "current_e0_probe_runs.jsonl"
 )
+MAINTAINER_README_PATH = MAINTAINER_DIR / "README.md"
 CURRENT_CATALOG_SHA256 = (
     "379fc96637a0b5bb5dfdc10de0605a0922f223ba5544f8f6b48f67c3f8b8bcb6"
 )
@@ -34,10 +35,59 @@ BOUNDED_ERROR_REVISION = (
 MIXED_FILTER_REVISION = (
     "27ddaef678be426ef51feb73d8f66f6146bcba3106acbc661ba83d0bdd66e119"
 )
+PRIVATE_ARTIFACT_PATHS = {
+    "maintainer/analyses/hidden_schedule.jsonl",
+    "maintainer/analyses/calibration_runs.jsonl",
+    "maintainer/analyses/current_probe_runs.jsonl",
+    "maintainer/analyses/current_e0_probe_runs.jsonl",
+    "maintainer/analyses/normal_lwe.jsonl",
+    "maintainer/CALIBRATION.md",
+    "maintainer/CORPUS_DISTRIBUTION_2026-07-21.md",
+    "maintainer/LITERATURE.md",
+    "maintainer/REANALYSIS_2026-07-20.md",
+    "maintainer/tools/corpus",
+    "maintainer/tools/solvers",
+}
+AGENT_FORBIDDEN_NAMES = {
+    "maintainer",
+    "analyses",
+    "hidden_schedule.jsonl",
+    "calibration_runs.jsonl",
+    "current_probe_runs.jsonl",
+    "current_e0_probe_runs.jsonl",
+    "normal_lwe.jsonl",
+    "CALIBRATION.md",
+    "CORPUS_DISTRIBUTION_2026-07-21.md",
+    "LITERATURE.md",
+    "REANALYSIS_2026-07-20.md",
+}
 
 
 def _jsonl(path: Path) -> list[dict[str, object]]:
     return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
+
+
+def test_maintainer_readme_documents_private_artifact_boundary() -> None:
+    text = MAINTAINER_README_PATH.read_text(encoding="utf-8")
+
+    assert "not part of the tested agent's `/app`" in text
+    assert "| `harbor/app/` | yes |" in text
+    assert "| `maintainer/` | no |" in text
+    assert "Private artifact index" in text
+    assert "retained receipts must stay witness-free" in text
+    for relative_path in PRIVATE_ARTIFACT_PATHS:
+        assert relative_path.removeprefix("maintainer/") in text
+        assert (TASK_DIR / relative_path).exists()
+
+
+def test_agent_visible_tree_excludes_private_research_artifacts() -> None:
+    app_paths = [path.relative_to(APP_DIR) for path in APP_DIR.rglob("*")]
+
+    assert not (APP_DIR / "maintainer").exists()
+    assert not (APP_DIR / "tools").exists()
+    assert not (APP_DIR / "analyses").exists()
+    for relative_path in app_paths:
+        assert AGENT_FORBIDDEN_NAMES.isdisjoint(relative_path.parts)
 
 
 def test_final_calibration_receipts_are_canonical_and_historical() -> None:
