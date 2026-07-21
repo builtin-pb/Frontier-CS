@@ -97,10 +97,6 @@ class Instance:
         return self.__spec.b
 
     @property
-    def family(self) -> str | None:
-        return self.__spec.family
-
-    @property
     def matrix_kind(self) -> str:
         return self.__spec.matrix.kind
 
@@ -183,10 +179,6 @@ class Instance:
     @property
     def error_max_nonzero(self) -> int | None:
         return self.__spec.error.max_nonzero
-
-    @property
-    def generator_version(self) -> str:
-        return self.__spec.generator_version
 
     @property
     def instance_digest(self) -> str:

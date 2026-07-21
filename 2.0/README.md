@@ -128,6 +128,4 @@ instances as possible and submit an immediately updated cumulative JSON ledger;
 each solved instance contributes one point.  The evaluator holds no planted
 secret or private checking key: it deterministically reconstructs the public
 matrix and checks the submitted vector's public secret and centered-error
-predicates.  The corpus assigns 60 instances to a target sub-hour research
-ladder and 140 to a modeled logarithmic ladder through 1024 hours; runtime
-labels are attack estimates, not hardness guarantees.
+predicates.

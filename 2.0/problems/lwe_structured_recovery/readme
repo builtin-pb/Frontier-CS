@@ -49,12 +49,11 @@ Python facade is the reference implementation; independent implementations
 can be compared row-for-row against it.
 
 The current production catalog SHA-256 is
-`379fc96637a0b5bb5dfdc10de0605a0922f223ba5544f8f6b48f67c3f8b8bcb6`.
+`318f32b68e8a30c6bcd5867c89eb10d87a5472614401f4e6df0f55356cdc98a6`.
 Production witnesses and errors are sampled during corpus construction and must
 not be retained as evaluator inputs or release assets.  Reproducibility means
-reproducing the public instance from its released record, not recovering a
-private generation seed.  Synthetic generator tests accept an explicit seed
-and are byte-reproducible.
+reproducing the public instance from its released record, not recovering any
+private generation seed.
 
 ## Public catalog and stable Python interface
 
@@ -71,8 +70,7 @@ The packaged task contract uses these agent-visible paths:
 ```
 
 The production catalog contains exactly 200 instances.  Its entries and
-verified digest are authoritative; `catalog.synthetic.json` is not challenge
-input.
+verified digest are authoritative.
 
 Use `public/lwe_instance.py`; callers do not need to import
 `lwe_challenge.*` or parse catalog JSON directly.  This complete example loads
@@ -327,8 +325,7 @@ Do not rely on a GPU.
 
 ## Release catalog integrity
 
-`catalog.synthetic.json` is a tiny test-only fixture and is never challenge
-input.  A release must package `public/catalog.jsonl` and its matching
+A release must package `public/catalog.jsonl` and its matching
 `public/catalog.sha256` on both the agent and judge sides.  The evaluator refuses
 to prepare if the sidecar is wrong or the production catalog does not contain
 exactly 200 instances.

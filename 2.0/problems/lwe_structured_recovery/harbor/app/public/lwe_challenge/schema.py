@@ -7,7 +7,7 @@ import os
 import re
 import stat
 from dataclasses import dataclass, field
-from pathlib import Path, PurePosixPath
+from pathlib import Path
 from types import MappingProxyType
 from typing import Literal, Mapping
 
@@ -50,26 +50,8 @@ _ERROR_DISTRIBUTION_KINDS = frozenset(
         "sparse_bounded",
     }
 )
-_FAMILIES = frozenset(
-    {
-        "DS_BIN",
-        "DS_TER",
-        "DS_SMALL",
-        "SA_Q",
-        "SA_SMALL",
-        "DA_BIN",
-        "DA_TER",
-        "MIX_Q_SPARSE",
-        "MIX_SMALL_SPARSE",
-        "MIX_DENSE_SMALL",
-    }
-)
-_CALIBRATION_STATUSES = frozenset(
-    {"unmeasured", "measured", "interpolated", "extrapolated"}
-)
-
 _CATALOG_KEYS = frozenset({"schema_version", "instances"})
-_PUBLIC_INSTANCE_KEYS = frozenset(
+_INSTANCE_KEYS = frozenset(
     {
         "schema_version",
         "instance_id",
@@ -82,25 +64,9 @@ _PUBLIC_INSTANCE_KEYS = frozenset(
         "secret",
         "error_distribution",
         "error",
-        "generator_version",
         "instance_digest",
     }
 )
-_PRIVATE_INSTANCE_KEYS = frozenset(
-    {
-        "family",
-        "tier",
-        "cohort",
-        "octave",
-        "runtime_bin",
-        "analysis_path",
-        "calibration_status",
-        "calibration_model_id",
-        "predicted_runtime_seconds",
-        "measured_runtime_seconds",
-    }
-)
-_INSTANCE_KEYS = _PUBLIC_INSTANCE_KEYS | _PRIVATE_INSTANCE_KEYS
 _MATRIX_KEYS = frozenset(
     {"kind", "seed_hex", "expansion_domain", "alphabet", "row_weight"}
 )
@@ -112,14 +78,7 @@ _ERROR_DISTRIBUTION_KEYS = frozenset({"kind", "sigma", "eta", "bound", "weight"}
 _ERROR_PREDICATE_KEYS = frozenset(
     {"max_abs", "max_l1", "max_l2_squared", "max_nonzero"}
 )
-_DIGEST_EXCLUDED_FIELDS = (
-    "instance_digest",
-    "analysis_path",
-    "calibration_status",
-    "calibration_model_id",
-    "predicted_runtime_seconds",
-    "measured_runtime_seconds",
-)
+_DIGEST_EXCLUDED_FIELDS = ("instance_digest",)
 
 
 @dataclass(frozen=True, slots=True)
@@ -190,17 +149,6 @@ class InstanceSpec:
     secret: SecretPredicateSpec
     error_distribution: ErrorDistributionSpec
     error: ErrorPredicateSpec
-    family: str | None
-    tier: str | None
-    cohort: str | None
-    octave: int | None
-    runtime_bin: str | None
-    analysis_path: str | None
-    generator_version: str
-    calibration_status: str | None
-    calibration_model_id: str | None
-    predicted_runtime_seconds: float | None
-    measured_runtime_seconds: float | None
     instance_digest: str
 
 
@@ -434,20 +382,6 @@ def _parse_instance(raw: Mapping[str, object]) -> InstanceSpec:
         raw["error_distribution"], raw["error"], m=m
     )
 
-    family = _parse_optional_family(raw)
-    tier, cohort, octave, runtime_bin = _parse_optional_tier_metadata(raw)
-    analysis_path = (
-        _parse_analysis_path(raw["analysis_path"])
-        if "analysis_path" in raw
-        else None
-    )
-    generator_version = _require_nonempty_string(
-        raw["generator_version"], "generator_version"
-    )
-    calibration_status, calibration_model_id, predicted_runtime_seconds, measured_runtime_seconds = (
-        _parse_optional_calibration(raw)
-    )
-
     instance_digest = _require_string(raw["instance_digest"], "instance_digest")
     if _HEX_64.fullmatch(instance_digest) is None:
         raise ValueError("instance_digest must be lowercase 64-character hexadecimal")
@@ -466,17 +400,6 @@ def _parse_instance(raw: Mapping[str, object]) -> InstanceSpec:
         secret=secret,
         error_distribution=error_distribution,
         error=error,
-        family=family,
-        tier=tier,
-        cohort=cohort,
-        octave=octave,
-        runtime_bin=runtime_bin,
-        analysis_path=analysis_path,
-        generator_version=generator_version,
-        calibration_status=calibration_status,
-        calibration_model_id=calibration_model_id,
-        predicted_runtime_seconds=predicted_runtime_seconds,
-        measured_runtime_seconds=measured_runtime_seconds,
         instance_digest=instance_digest,
     )
 
@@ -745,88 +668,6 @@ def _parse_error_specs(
     )
 
 
-def _parse_calibration(
-    raw: Mapping[str, object],
-) -> tuple[str, str, float, float | None]:
-    status = _require_choice(
-        raw["calibration_status"], _CALIBRATION_STATUSES, "calibration_status"
-    )
-    model_id = _require_string(raw["calibration_model_id"], "calibration_model_id")
-    predicted = _require_number(
-        raw["predicted_runtime_seconds"], "predicted_runtime_seconds"
-    )
-    measured = _require_optional_number(
-        raw["measured_runtime_seconds"], "measured_runtime_seconds"
-    )
-    if predicted < 0 or (measured is not None and measured < 0):
-        raise ValueError("runtime fields must be finite and nonnegative")
-
-    if status == "unmeasured":
-        if model_id != "" or predicted != 0 or measured is not None:
-            raise ValueError(
-                "unmeasured calibration requires empty model ID, zero prediction, "
-                "and no measurement"
-            )
-    elif status == "measured":
-        if not model_id.strip() or measured is None or measured <= 0:
-            raise ValueError(
-                "measured calibration requires a model/run ID and positive measured time"
-            )
-    else:
-        if not model_id.strip() or predicted <= 0 or measured is not None:
-            raise ValueError(
-                "modeled calibration requires a model ID, positive prediction, and no measurement"
-            )
-    return status, model_id, predicted, measured
-
-
-def _parse_optional_family(raw: Mapping[str, object]) -> str | None:
-    if "family" not in raw:
-        return None
-    return _require_choice(raw["family"], _FAMILIES, "family")
-
-
-def _parse_optional_tier_metadata(
-    raw: Mapping[str, object],
-) -> tuple[str | None, str | None, int | None, str | None]:
-    keys = {"tier", "cohort", "octave", "runtime_bin"}
-    present = keys & set(raw)
-    if not present:
-        return None, None, None, None
-    if present != keys:
-        missing = ", ".join(sorted(keys - present))
-        raise ValueError(f"missing instance private tier metadata fields: {missing}")
-
-    tier = _require_choice(raw["tier"], {"easy", "hard", "synthetic"}, "tier")
-    cohort = _require_choice(
-        raw["cohort"], {"paper", "ladder", "synthetic"}, "cohort"
-    )
-    octave = _require_optional_integer(raw["octave"], "octave")
-    runtime_bin = _require_string(raw["runtime_bin"], "runtime_bin")
-    _validate_tier_metadata(
-        tier=tier, cohort=cohort, runtime_bin=runtime_bin, octave=octave
-    )
-    return tier, cohort, octave, runtime_bin
-
-
-def _parse_optional_calibration(
-    raw: Mapping[str, object],
-) -> tuple[str | None, str | None, float | None, float | None]:
-    keys = {
-        "calibration_status",
-        "calibration_model_id",
-        "predicted_runtime_seconds",
-        "measured_runtime_seconds",
-    }
-    present = keys & set(raw)
-    if not present:
-        return None, None, None, None
-    if present != keys:
-        missing = ", ".join(sorted(keys - present))
-        raise ValueError(f"missing instance private calibration fields: {missing}")
-    return _parse_calibration(raw)
-
-
 def _parse_alphabet(raw_value: object, *, q: int, context: str) -> tuple[int, ...]:
     raw = _require_list(raw_value, context)
     values = tuple(
@@ -844,21 +685,6 @@ def _parse_alphabet(raw_value: object, *, q: int, context: str) -> tuple[int, ..
     return values
 
 
-def _parse_analysis_path(raw_value: object) -> str:
-    value = _require_nonempty_string(raw_value, "analysis_path")
-    path = PurePosixPath(value)
-    if (
-        path.is_absolute()
-        or ".." in path.parts
-        or value in {".", ""}
-        or value != str(path)
-        or "\\" in value
-        or "\x00" in value
-    ):
-        raise ValueError("analysis_path must be a normalized relative POSIX path without '..'")
-    return value
-
-
 def _parse_instance_id(raw_value: object) -> str:
     value = _require_string(raw_value, "instance_id")
     if _INSTANCE_ID.fullmatch(value) is None:
@@ -867,25 +693,6 @@ def _parse_instance_id(raw_value: object) -> str:
             "or hyphens and must start with a letter or digit"
         )
     return value
-
-
-def _validate_tier_metadata(
-    *, tier: str, cohort: str, runtime_bin: str, octave: int | None
-) -> None:
-    if tier == "easy":
-        valid = cohort == "paper" and runtime_bin in {
-            f"E{index}" for index in range(6)
-        } and octave is None
-    elif tier == "hard":
-        valid = (
-            cohort == "ladder"
-            and runtime_bin in {f"H{index}" for index in range(10)}
-            and octave == int(runtime_bin[1:])
-        )
-    else:
-        valid = cohort == "synthetic" and runtime_bin == "synthetic" and octave is None
-    if not valid:
-        raise ValueError("tier metadata is inconsistent")
 
 
 def _schema_version(raw_value: object, context: str) -> int:
@@ -910,7 +717,7 @@ def _require_exact_keys(
 def _require_instance_keys(raw: Mapping[str, object]) -> None:
     keys = set(raw)
     unknown = sorted(keys - _INSTANCE_KEYS)
-    missing = sorted(_PUBLIC_INSTANCE_KEYS - keys)
+    missing = sorted(_INSTANCE_KEYS - keys)
     if unknown:
         raise ValueError(f"unknown instance fields: {', '.join(unknown)}")
     if missing:
@@ -933,13 +740,6 @@ def _require_string(raw_value: object, context: str) -> str:
     if not isinstance(raw_value, str):
         raise ValueError(f"{context} must be a string")
     return raw_value
-
-
-def _require_nonempty_string(raw_value: object, context: str) -> str:
-    value = _require_string(raw_value, context)
-    if not value.strip():
-        raise ValueError(f"{context} must be nonempty")
-    return value
 
 
 def _require_choice(
