@@ -15,6 +15,7 @@ APP_DIR = TASK_DIR / "harbor" / "app"
 MAINTAINER_DIR = TASK_DIR / "maintainer"
 CATALOG_PATH = APP_DIR / "public" / "catalog.jsonl"
 RECEIPTS_PATH = MAINTAINER_DIR / "analyses" / "calibration_runs.jsonl"
+CURRENT_PROBES_PATH = MAINTAINER_DIR / "analyses" / "current_probe_runs.jsonl"
 CURRENT_CATALOG_SHA256 = (
     "379fc96637a0b5bb5dfdc10de0605a0922f223ba5544f8f6b48f67c3f8b8bcb6"
 )
@@ -151,6 +152,31 @@ def test_final_reference_runs_are_scoped_honestly() -> None:
         bounded[instance_id]["outcome"] == "censored"
         for instance_id in e2_ids - {"lwe_0083"}
     )
+
+
+def test_current_probe_runs_bind_to_current_catalog_without_secrets() -> None:
+    raw_lines = CURRENT_PROBES_PATH.read_text(encoding="utf-8").splitlines()
+    probes = [json.loads(line) for line in raw_lines]
+    catalog = {row["instance_id"]: row for row in _jsonl(CATALOG_PATH)}
+
+    assert len(probes) == 7
+    assert raw_lines == [
+        json.dumps(row, allow_nan=False, sort_keys=True, separators=(",", ":"))
+        for row in probes
+    ]
+    assert {row["outcome"] for row in probes} == {"success", "censored"}
+    assert sum(row["outcome"] == "success" for row in probes) == 5
+    for row in probes:
+        assert row["catalog_sha256"] == CURRENT_CATALOG_SHA256
+        assert row["instance_digest"] == catalog[row["instance_id"]][
+            "instance_digest"
+        ]
+        assert row["secret_retained"] is False
+        assert "secret" not in row
+        if row["outcome"] == "success":
+            assert row["validation"] == "public-verifier-ok"
+        else:
+            assert row["validation"] == "not-validated-no-secret"
 
 
 def test_documented_solver_revisions_match_current_canonical_receipts() -> None:

@@ -48,6 +48,13 @@ previous redacted catalog
 They remain useful parameter-level calibration evidence, but they are not
 current-catalog exact solve receipts after the fresh-witness regeneration.
 
+Current-catalog smoke probes are recorded separately in
+`analyses/current_probe_runs.jsonl`.  As of this note, four sparse-secret
+records and one bounded-error record have fresh witness-free `SUCCESS`
+receipts against the regenerated catalog, while two adjacent records censored
+under short caps.  These probes are only spot checks; they do not replace a
+full calibration campaign.
+
 ## Next iteration
 
 Before claiming current-catalog measured easy coverage, rerun the reference
